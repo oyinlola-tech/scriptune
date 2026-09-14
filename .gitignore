@@ -1,0 +1,45 @@
+# dependencies and build output (any depth)
+node_modules/
+dist/
+.next/
+out/
+coverage/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# tooling caches
+.turbo/
+*.tsbuildinfo
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# generated code
+api/src/generated/
+
+# downloaded datasets
+api/data/
+
+# signing material (never commit)
+*.p12
+*.p8
+*.jks
+*.keystore
+*.mobileprovision
+*.cer
+*.certSigningRequest
+
+# Python
+__pycache__/
+*.pyc
+
+# Agent config / instructions (not committed)
+.claude/
+CLAUDE.md
+AGENTS.md
