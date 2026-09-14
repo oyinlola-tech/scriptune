@@ -1,0 +1,67 @@
+{
+  "name": "@scriptune/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Scriptune API: recognition and discovery for the Bible and Christian hymns.",
+  "zudojs": {
+    "projectType": "backend",
+    "architecture": "modular-monolith",
+    "features": [
+      "database",
+      "openapi",
+      "security"
+    ]
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
+    "import:bible": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:bible",
+    "import:hymns": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:hymns",
+    "import:hymnal": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:hymnal"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@zudojs/auth": "^1.1.0",
+    "@zudojs/auth-oauth": "^1.1.1",
+    "@zudojs/config": "^1.0.1",
+    "@zudojs/constants": "^1.0.1",
+    "@zudojs/container": "^1.1.0",
+    "@zudojs/core": "^1.1.0",
+    "@zudojs/cqrs": "^1.0.1",
+    "@zudojs/database": "^1.1.0",
+    "@zudojs/errors": "^1.0.1",
+    "@zudojs/events": "^1.0.1",
+    "@zudojs/http": "^1.1.0",
+    "@zudojs/logger": "^1.1.0",
+    "@zudojs/messaging": "^1.0.1",
+    "@zudojs/openapi": "^1.2.0",
+    "@zudojs/runtime": "^1.1.0",
+    "@zudojs/security": "^1.0.1",
+    "@zudojs/types": "^1.0.0",
+    "@zudojs/validation": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "prisma": "^7.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  },
+  "overrides": {
+    "mysql2": ">=3.22.0"
+  }
+}
