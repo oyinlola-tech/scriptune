@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import { Bug, GitBranch, Lightbulb, Mail } from "lucide-react";
-import { LEGAL_CONTACT } from "@scriptune/contracts";
+import { LEGAL_CONTACT, PROJECT_LINKS } from "@scriptune/contracts";
 import { Page, PageHeading } from "@/components/layout/page";
 import { SupportWidget } from "@/components/support/support-widget";
-import { GITHUB_URL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Support", description: "Report a problem, suggest a hymnal, contribute code, or help keep Scriptune running." };
 
 const GITHUB_LINKS = [
-  { href: `${GITHUB_URL}/issues/new?labels=bug&title=Something%20went%20wrong`, icon: Bug, title: "Report a problem", text: "A hymn that will not identify, a verse in the wrong place, an app that crashed. Say what you did and what happened." },
-  { href: `${GITHUB_URL}/issues/new?labels=enhancement&title=Suggestion`, icon: Lightbulb, title: "Suggest something", text: "A hymnal your church sings from, a translation, a feature you wish were there." },
-  { href: GITHUB_URL, icon: GitBranch, title: "Read or improve the code", text: "Scriptune is open source. Fork it, fix it, send a pull request." },
+  { href: PROJECT_LINKS.reportProblem, icon: Bug, title: "Report a problem", text: "A hymn that will not identify, a verse in the wrong place, an app that crashed. Say what you did and what happened." },
+  { href: PROJECT_LINKS.suggest, icon: Lightbulb, title: "Suggest something", text: "A hymnal your church sings from, a translation, a feature you wish were there." },
+  { href: PROJECT_LINKS.github, icon: GitBranch, title: "Read or improve the code", text: "Scriptune is open source. Fork it, fix it, send a pull request." },
 ];
 
 export default function SupportPage() {
