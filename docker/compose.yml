@@ -1,0 +1,85 @@
+# Local development stack. From the repository root:
+#   docker compose -f docker/compose.yml up -d            # Postgres + Redis only
+#   docker compose -f docker/compose.yml --profile api up # ...plus the API and Whisper transcriber images
+# Host ports come from docker/.env (see docker/.env.example).
+
+name: scriptune
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: scriptune
+      POSTGRES_PASSWORD: scriptune
+      POSTGRES_DB: scriptune
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scriptune -d scriptune"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  transcriber:
+    profiles: ["api"]
+    build:
+      context: ..
+      dockerfile: docker/transcriber.Dockerfile
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+    ports:
+      - "127.0.0.1:${TRANSCRIBER_PORT:-5005}:5005"
+
+  migrate:
+    profiles: ["api"]
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+      target: build
+    command: ["npm", "run", "db:deploy"]
+    environment:
+      DATABASE_URL: postgresql://scriptune:scriptune@postgres:5432/scriptune
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    profiles: ["api"]
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
+      DATABASE_URL: postgresql://scriptune:scriptune@postgres:5432/scriptune
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      WHISPER_URL: http://transcriber:5005
+      AUTH_ACCESS_SECRET: ${AUTH_ACCESS_SECRET:?set in docker/.env}
+      AUTH_REFRESH_SECRET: ${AUTH_REFRESH_SECRET:?set in docker/.env}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      LOG_LEVEL: info
+    ports:
+      - "127.0.0.1:${API_PORT:-4000}:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      transcriber:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
