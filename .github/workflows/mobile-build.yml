@@ -1,0 +1,192 @@
+# Builds the Scriptune mobile app on GitHub's runners so the apps can be
+# downloaded from the workflow run without a Mac or an EAS/Apple login.
+#
+#   Android  → app-release.apk (debug-signed, installs on any phone with "unknown sources" allowed)
+#   iOS      → Scriptune-unsigned.ipa, or a signed ad-hoc .ipa when the Apple secrets below are set
+#
+# Runs: from the Actions tab (choose the platform), on every push to main that touches the app
+# (Android only, since macOS minutes are expensive), and for both platforms on a tag like mobile-v0.1.0.
+#
+# Optional repository secrets for a signed iOS build that installs directly:
+#   IOS_P12_BASE64                base64 of a development or distribution certificate (.p12)
+#   IOS_P12_PASSWORD              its password
+#   IOS_PROVISIONING_PROFILE_BASE64  base64 of an ad-hoc provisioning profile for site.oyinlola.scriptune that lists your iPhone's UDID
+#   APPLE_TEAM_ID                 the ten-character team id
+# Without them the iOS artifact is unsigned and must be sideloaded (Sideloadly or AltStore re-sign it with your Apple ID).
+
+name: Mobile build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which apps to build
+        type: choice
+        default: both
+        options: [android, ios, both]
+      api_url:
+        description: API the app talks to (baked in at bundle time)
+        type: string
+        default: https://api.scriptune.app
+  push:
+    branches: [main]
+    paths: ["mobile/**", "packages/contracts/**", ".github/workflows/mobile-build.yml"]
+    tags: ["mobile-v*"]
+
+# One group per trigger and platform choice, so a manual iOS build is never cancelled by a push (or vice versa).
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-build-${{ github.event_name }}-${{ inputs.platform || 'push' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'https://api.scriptune.app' }}
+  EXPO_PUBLIC_SITE_URL: https://scriptune.app
+  CI: "1"
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  android:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform != 'ios' }}
+    name: Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+        with:
+          # The action's default set includes the retired "tools" package, which the
+          # SDK repository no longer serves; Gradle fetches everything else it needs.
+          packages: platform-tools
+          accept-android-sdk-licenses: true
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile/package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --no-daemon
+        working-directory: mobile/android
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scriptune-android-apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+  ios:
+    # On plain pushes only Android is built; iOS runs on demand and for release tags.
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.platform != 'android') || startsWith(github.ref, 'refs/tags/mobile-v') }}
+    name: iOS IPA
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      HAS_SIGNING: ${{ secrets.IOS_P12_BASE64 != '' && secrets.IOS_PROVISIONING_PROFILE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate the native iOS project (runs pod install)
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx expo prebuild --platform ios
+
+      - name: Install signing certificate and profile
+        if: ${{ env.HAS_SIGNING == 'true' }}
+        env:
+          IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
+          IOS_P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          echo "$IOS_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$IOS_P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychain -d user -s "$KEYCHAIN"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' /dev/stdin <<< "$(security cms -D -i "$RUNNER_TEMP/profile.mobileprovision")")
+          cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID".mobileprovision
+          echo "PROFILE_UUID=$UUID" >> "$GITHUB_ENV"
+
+      - name: Archive (signed, ad hoc)
+        if: ${{ env.HAS_SIGNING == 'true' }}
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace ios/Scriptune.xcworkspace -scheme Scriptune -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Scriptune.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_UUID" \
+            archive | tail -40
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>ad-hoc</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key><dict><key>site.oyinlola.scriptune</key><string>$PROFILE_UUID</string></dict>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Scriptune.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" | tail -20
+          mkdir -p build && cp "$RUNNER_TEMP"/export/*.ipa build/Scriptune.ipa
+
+      - name: Archive (unsigned)
+        if: ${{ env.HAS_SIGNING != 'true' }}
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace ios/Scriptune.xcworkspace -scheme Scriptune -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Scriptune.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive | tail -40
+          mkdir -p build/Payload
+          cp -R "$RUNNER_TEMP/Scriptune.xcarchive/Products/Applications/Scriptune.app" build/Payload/
+          (cd build && zip -qr Scriptune-unsigned.ipa Payload)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scriptune-ios-ipa
+          path: mobile/build/*.ipa
+          if-no-files-found: error

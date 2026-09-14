@@ -1,0 +1,40 @@
+{
+  "hymnal": {
+    "slug": "ccc-hymnal",
+    "title": "Celestial Church of Christ Hymnal",
+    "publisher": "Celestial Church of Christ",
+    "description": "The hymnal of the Celestial Church of Christ, used with permission. Hymns in English and Yoruba.",
+    "rightsStatus": "used-by-permission"
+  },
+  "source": {
+    "slug": "ccc-official",
+    "name": "Celestial Church of Christ (contributed with permission)",
+    "license": "Used by permission of the Celestial Church of Christ, which retains all rights.",
+    "rightsStatus": "used-by-permission",
+    "notes": "Permission granted 2026. The church may request removal at any time."
+  },
+  "entries": [
+    {
+      "number": 1,
+      "title": "Example hymn (English title)",
+      "texts": [
+        {
+          "language": "en",
+          "title": "Example hymn (English title)",
+          "stanzas": [
+            { "number": 1, "kind": "verse", "lines": ["First line of the English verse,", "second line of the English verse."] },
+            { "number": null, "kind": "chorus", "lines": ["A line of the English chorus."] }
+          ]
+        },
+        {
+          "language": "yo",
+          "title": "Àkọlé orin (Yorùbá)",
+          "stanzas": [
+            { "number": 1, "kind": "verse", "lines": ["Ìlà àkọ́kọ́ ẹsẹ Yorùbá,", "ìlà kejì ẹsẹ Yorùbá."] },
+            { "number": null, "kind": "chorus", "lines": ["Ìlà ẹgbẹ orin Yorùbá."] }
+          ]
+        }
+      ]
+    }
+  ]
+}
