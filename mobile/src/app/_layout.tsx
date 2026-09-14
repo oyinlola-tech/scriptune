@@ -71,6 +71,7 @@ export default function RootLayout() {
             <Stack.Screen name="search" options={{ title: "Search" }} />
             <Stack.Screen name="library/index" options={{ title: "Library" }} />
             <Stack.Screen name="settings" options={{ title: "Settings" }} />
+            <Stack.Screen name="support" options={{ title: "Support" }} />
             <Stack.Screen name="auth/login" options={{ title: "Sign in", presentation: "modal" }} />
             <Stack.Screen name="auth/callback" options={{ title: "Signing in" }} />
             <Stack.Screen name="library/collections/[slug]" options={{ title: "Collection" }} />

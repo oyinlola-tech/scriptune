@@ -15,6 +15,7 @@ export const offlineModelPath = () => "";
 export async function hasOfflineModel(): Promise<boolean> { return false; }
 export async function downloadOfflineModel(): Promise<void> { throw new Error("Offline listening is only available in the Scriptune app."); }
 export async function removeOfflineModel(): Promise<void> { return undefined; }
+export async function discardOfflineModel(): Promise<void> { return undefined; }
 export function useOfflineModel() {
   const query = useQuery({ queryKey: offlineModelKey, queryFn: hasOfflineModel, staleTime: Infinity });
   return { hasModel: false, isLoaded: query.isSuccess };

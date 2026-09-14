@@ -1,5 +1,8 @@
 // The package ships its typings under a different module name; mirror them here.
+// `init` returns a Promise on Android (rejects when the microphone is busy) and
+// nothing on iOS; `stop` returns nothing on both.
 declare module "@fugood/react-native-audio-pcm-stream" {
+  import type { EmitterSubscription } from "react-native";
   export interface Options {
     sampleRate: number;
     /** 1 or 2 */
@@ -13,10 +16,10 @@ declare module "@fugood/react-native-audio-pcm-stream" {
     bufferSize?: number;
   }
   export interface IAudioRecord {
-    init: (options: Options) => void;
+    init: (options: Options) => void | Promise<void>;
     start: () => void;
-    stop: () => Promise<string>;
-    on: (event: "data", callback: (data: string) => void) => void;
+    stop: () => void;
+    on: (event: "data", callback: (data: string) => void) => EmitterSubscription;
   }
   const AudioRecord: IAudioRecord;
   export default AudioRecord;

@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import { Link, type Href } from "expo-router";
-import { ChevronRight, CloudDownload, LibraryBig, LogIn, Search, Settings2, type LucideIcon } from "lucide-react-native";
+import { ChevronRight, CloudDownload, Heart, LibraryBig, LogIn, Search, Settings2, type LucideIcon } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { Screen, Text } from "@/components/ui";
 import { useAuthStore } from "@/lib/auth";
@@ -86,6 +86,18 @@ export default function MoreScreen() {
         <Tile href="/offline" icon={CloudDownload} title="Offline copies" blurb="Keep the words with you without signal." />
         <Tile href="/settings" icon={Settings2} title="Settings" blurb="Listening, appearance, account." />
       </View>
+      <Link href="/support" asChild>
+        <Pressable accessibilityRole="link" accessibilityLabel="Support Scriptune. Report a problem, suggest something, or help keep it running" style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.goldSoft, backgroundColor: colors.goldSoft }}>
+            <Heart size={20} color={colors.ink} strokeWidth={1.9} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fonts.serif, fontSize: 18 }}>Support Scriptune</Text>
+              <Text variant="muted" style={{ fontSize: 13 }}>Report a problem, suggest a hymnal, or help keep it running.</Text>
+            </View>
+            <ChevronRight size={18} color={colors.muted} />
+          </View>
+        </Pressable>
+      </Link>
       <View style={{ marginTop: spacing.lg, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.md }}>
         <Text variant="muted" style={{ fontSize: 12 }}>Scriptune{version ? ` ${version}` : ""}</Text>
         <Link href={{ pathname: "/legal/[doc]", params: { doc: "terms" } }} asChild><Pressable accessibilityRole="link"><Text variant="muted" style={{ fontSize: 12, textDecorationLine: "underline" }}>Terms</Text></Pressable></Link>

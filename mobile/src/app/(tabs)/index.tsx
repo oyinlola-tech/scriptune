@@ -52,6 +52,19 @@ export default function IdentifyScreen() {
     await fromLocalAudio.mutateAsync(text).catch(() => undefined);
   }, [fromLocalAudio]);
   const localRecorder = useLocalRecorder(onLocalTranscript, setError);
+  // Which microphone path is in use. Chosen when listening starts and held until
+  // that recorder is idle again, so a connection change mid-clip cannot swap the
+  // button out from under a running recording or start a second capture.
+  const [active, setActive] = useState<"server" | "device" | null>(null);
+  const path = active ?? (online ? "server" : hasModel ? "device" : null);
+  useEffect(() => {
+    if (active === "server" && recorder.status === "idle") setActive(null);
+    if (active === "device" && localRecorder.status === "idle") setActive(null);
+  }, [active, recorder.status, localRecorder.status]);
+  const startListening = () => {
+    if (path === "server") { setActive("server"); void recorder.start(); }
+    else if (path === "device") { setActive("device"); void localRecorder.start(); }
+  };
 
   // Start listening on demand: from the widget or shortcut (scriptune://listen), or on
   // every launch and return to the foreground when the person turned that on.
@@ -65,8 +78,7 @@ export default function IdentifyScreen() {
   const startRef = useRef<() => void>(() => undefined);
   useEffect(() => {
     startRef.current = () => {
-      if (online && recorder.status === "idle") void recorder.start();
-      else if (!online && hasModel && localRecorder.status === "idle") void localRecorder.start();
+      if (active === null && recorder.status === "idle" && localRecorder.status === "idle") startListening();
     };
   });
   useFocusEffect(useCallback(() => {
@@ -102,11 +114,11 @@ export default function IdentifyScreen() {
         <Text variant="muted" style={{ textAlign: "center", maxWidth: 300 }}>A hymn the choir just started. A verse the preacher quoted. Let it listen and find out.</Text>
       </View>
       <View style={{ marginVertical: spacing.lg }}>
-        {online ? (
-          <ListenButton status={recorder.status} onStart={() => void recorder.start()} onStop={() => void recorder.stop()} />
-        ) : hasModel ? (
+        {path === "server" ? (
+          <ListenButton status={recorder.status} onStart={startListening} onStop={() => void recorder.stop()} />
+        ) : path === "device" ? (
           <View style={{ gap: spacing.sm }}>
-            <ListenButton status={localRecorder.status} onStart={() => void localRecorder.start()} onStop={() => void localRecorder.stop()} />
+            <ListenButton status={localRecorder.status} onStart={startListening} onStop={() => void localRecorder.stop()} />
             <Text variant="muted" style={{ textAlign: "center", fontSize: 13 }}>Offline: listening on this device{hasAny ? "" : ". Download the words too, so there is something to match."}</Text>
           </View>
         ) : (
