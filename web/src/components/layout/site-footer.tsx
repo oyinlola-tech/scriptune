@@ -4,7 +4,7 @@ import { Wordmark } from "@/components/brand/wordmark";
 const COLUMNS = [
   { title: "Find", links: [{ href: "/", label: "Identify" }, { href: "/search", label: "Search" }, { href: "/explore", label: "Explore" }] },
   { title: "Read", links: [{ href: "/bible", label: "Bible" }, { href: "/hymnals", label: "Hymnals" }, { href: "/hymns", label: "All hymns" }] },
-  { title: "You", links: [{ href: "/library", label: "Library" }, { href: "/library/history", label: "History" }, { href: "/account", label: "Account" }] },
+  { title: "You", links: [{ href: "/library", label: "Library" }, { href: "/library/history", label: "History" }, { href: "/account", label: "Account" }, { href: "/support", label: "Support" }] },
   { title: "Legal", links: [{ href: "/legal/terms", label: "Terms" }, { href: "/legal/privacy", label: "Privacy" }, { href: "/legal/copyright", label: "Copyright" }, { href: "/legal/licenses", label: "Licences" }] },
 ];
 

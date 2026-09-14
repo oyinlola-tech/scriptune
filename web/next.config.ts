@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
       `connect-src 'self' ${api}`,
       "media-src 'self' blob:",
       "worker-src 'self' blob:",
+      // Only the giving widget on /support may be framed in.
+      "frame-src https://myhappr.com",
     ].join("; ");
     return [
       {
