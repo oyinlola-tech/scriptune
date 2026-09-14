@@ -1,0 +1,497 @@
+// Scriptune database schema.
+//
+// Models are added phase by phase (see docs/v1-architecture.md).
+// Search columns (tsvector, trigram indexes) are declared in migration SQL.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Bible
+// ---------------------------------------------------------------------------
+
+enum Testament {
+  OLD
+  NEW
+}
+
+/// A Bible translation (KJV first). Text belongs to a translation; books do not.
+model Translation {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique
+  name         String
+  language     String
+  description  String?
+  rightsStatus String   @map("rights_status")
+  sourceName   String   @map("source_name")
+  sourceUrl    String?  @map("source_url")
+  isDefault    Boolean  @default(false) @map("is_default")
+  verseCount   Int      @default(0) @map("verse_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  verses       Verse[]
+  books        TranslationBook[]
+
+  @@map("bible_translations")
+}
+
+/// Canonical book, shared by every translation. `id` is the canonical order (1-66).
+model Book {
+  id           Int       @id
+  slug         String    @unique
+  name         String
+  abbreviation String
+  testament    Testament
+  /// True for the seven books Catholic editions include and Protestant ones omit.
+  deuterocanonical Boolean @default(false)
+  /// The most chapters this book has in any imported translation.
+  chapterCount Int       @map("chapter_count")
+  verses       Verse[]
+  translations TranslationBook[]
+  hymnReferences HymnScriptureReference[]
+
+  @@map("bible_books")
+}
+
+/// Which books a translation contains and how many chapters each has there
+/// (Esther and Daniel are longer in Catholic editions; Psalms numbering differs).
+model TranslationBook {
+  translationId String      @map("translation_id") @db.Uuid
+  bookId        Int         @map("book_id")
+  chapterCount  Int         @map("chapter_count")
+  verseCount    Int         @map("verse_count")
+  translation   Translation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  book          Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([translationId, bookId])
+  @@map("bible_translation_books")
+}
+
+/// One verse of one translation. `search_vector` is a generated tsvector column.
+model Verse {
+  id             Int                      @id @default(autoincrement())
+  translationId  String                   @map("translation_id") @db.Uuid
+  bookId         Int                      @map("book_id")
+  chapter        Int
+  verse          Int
+  text           String
+  normalizedText String                   @map("normalized_text")
+  searchVector   Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, text)")) @map("search_vector")
+  translation    Translation              @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  book           Book                     @relation(fields: [bookId], references: [id])
+
+  @@unique([translationId, bookId, chapter, verse])
+  @@index([translationId, bookId, chapter])
+  @@index([searchVector], type: Gin)
+  @@index([normalizedText(ops: raw("gin_trgm_ops"))], type: Gin, map: "bible_verses_normalized_text_trgm_idx")
+  @@map("bible_verses")
+}
+
+// ---------------------------------------------------------------------------
+// Hymns
+// ---------------------------------------------------------------------------
+
+enum ContributorRole {
+  AUTHOR
+  COMPOSER
+  TRANSLATOR
+  ARRANGER
+}
+
+/// Provenance of imported hymn data: where it came from and under what terms.
+model Source {
+  id           String     @id @default(uuid()) @db.Uuid
+  slug         String     @unique
+  name         String
+  url          String?
+  edition      String?
+  license      String
+  rightsStatus String     @map("rights_status")
+  retrievedAt  DateTime   @map("retrieved_at")
+  notes        String?
+  hymns        Hymn[]
+  texts        HymnText[]
+  hymnals      Hymnal[]
+
+  @@map("hymn_sources")
+}
+
+/// A hymn as a work, independent of language, edition or hymnal.
+model Hymn {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  slug                String                   @unique
+  /// Stable key used by importers to update rather than duplicate, e.g. "sacred-songs-and-solos:23".
+  importKey           String?                  @unique @map("import_key")
+  canonicalTitle      String                   @map("canonical_title")
+  year                Int?
+  meter               String?
+  tuneName            String?                  @map("tune_name")
+  rightsStatus        String                   @map("rights_status")
+  sourceId            String?                  @map("source_id") @db.Uuid
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  source              Source?                  @relation(fields: [sourceId], references: [id])
+  texts               HymnText[]
+  alternateTitles     HymnAlternateTitle[]
+  contributors        HymnContributor[]
+  hymnalEntries       HymnalEntry[]
+  topics              HymnTopic[]
+  scriptureReferences HymnScriptureReference[]
+
+  @@map("hymns")
+}
+
+/// The words of a hymn in one language and variant. `search_vector` is generated from title and lyrics.
+model HymnText {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  hymnId              String                   @map("hymn_id") @db.Uuid
+  language            String
+  variant             String                   @default("default")
+  title               String
+  stanzas             Json
+  lyrics              String
+  firstLine           String                   @map("first_line")
+  normalizedLyrics    String                   @map("normalized_lyrics")
+  normalizedFirstLine String                   @map("normalized_first_line")
+  searchVector        Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, ((title || ' '::text) || lyrics))")) @map("search_vector")
+  rightsStatus        String                   @map("rights_status")
+  sourceId            String?                  @map("source_id") @db.Uuid
+  hymn                Hymn                     @relation(fields: [hymnId], references: [id], onDelete: Cascade)
+  source              Source?                  @relation(fields: [sourceId], references: [id])
+
+  @@unique([hymnId, language, variant])
+  @@index([searchVector], type: Gin)
+  @@index([normalizedLyrics(ops: raw("gin_trgm_ops"))], type: Gin, map: "hymn_texts_normalized_lyrics_trgm_idx")
+  @@map("hymn_texts")
+}
+
+model HymnAlternateTitle {
+  id       String @id @default(uuid()) @db.Uuid
+  hymnId   String @map("hymn_id") @db.Uuid
+  title    String
+  language String @default("en")
+  hymn     Hymn   @relation(fields: [hymnId], references: [id], onDelete: Cascade)
+
+  @@index([hymnId])
+  @@map("hymn_alternate_titles")
+}
+
+model Person {
+  id            String            @id @default(uuid()) @db.Uuid
+  slug          String            @unique
+  name          String
+  birthYear     Int?              @map("birth_year")
+  deathYear     Int?              @map("death_year")
+  contributions HymnContributor[]
+
+  @@map("hymn_people")
+}
+
+model HymnContributor {
+  id       String          @id @default(uuid()) @db.Uuid
+  hymnId   String          @map("hymn_id") @db.Uuid
+  personId String          @map("person_id") @db.Uuid
+  role     ContributorRole
+  hymn     Hymn            @relation(fields: [hymnId], references: [id], onDelete: Cascade)
+  person   Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([hymnId, personId, role])
+  @@map("hymn_contributors")
+}
+
+/// A published collection that numbers hymns, e.g. Sacred Songs and Solos.
+model Hymnal {
+  id           String        @id @default(uuid()) @db.Uuid
+  slug         String        @unique
+  title        String
+  edition      String?
+  year         Int?
+  publisher    String?
+  description  String?
+  rightsStatus String        @map("rights_status")
+  sourceId     String?       @map("source_id") @db.Uuid
+  source       Source?       @relation(fields: [sourceId], references: [id])
+  entries      HymnalEntry[]
+
+  @@map("hymnals")
+}
+
+model HymnalEntry {
+  id       String  @id @default(uuid()) @db.Uuid
+  hymnalId String  @map("hymnal_id") @db.Uuid
+  hymnId   String  @map("hymn_id") @db.Uuid
+  number   Int
+  section  String?
+  hymnal   Hymnal  @relation(fields: [hymnalId], references: [id], onDelete: Cascade)
+  hymn     Hymn    @relation(fields: [hymnId], references: [id], onDelete: Cascade)
+
+  @@unique([hymnalId, number])
+  @@index([hymnId])
+  @@map("hymnal_entries")
+}
+
+model Topic {
+  id    String      @id @default(uuid()) @db.Uuid
+  slug  String      @unique
+  name  String
+  hymns HymnTopic[]
+
+  @@map("hymn_topics")
+}
+
+model HymnTopic {
+  hymnId  String @map("hymn_id") @db.Uuid
+  topicId String @map("topic_id") @db.Uuid
+  hymn    Hymn   @relation(fields: [hymnId], references: [id], onDelete: Cascade)
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([hymnId, topicId])
+  @@map("hymn_topic_links")
+}
+
+/// Links a hymn to the scripture it draws on; the bridge between hymns and the Bible.
+model HymnScriptureReference {
+  id         String  @id @default(uuid()) @db.Uuid
+  hymnId     String  @map("hymn_id") @db.Uuid
+  bookId     Int     @map("book_id")
+  chapter    Int
+  verseStart Int?    @map("verse_start")
+  verseEnd   Int?    @map("verse_end")
+  note       String?
+  hymn       Hymn    @relation(fields: [hymnId], references: [id], onDelete: Cascade)
+  book       Book    @relation(fields: [bookId], references: [id])
+
+  @@index([hymnId])
+  @@index([bookId, chapter])
+  @@map("hymn_scripture_references")
+}
+
+// ---------------------------------------------------------------------------
+// Recognition
+// ---------------------------------------------------------------------------
+
+enum RecognitionMode {
+  BIBLE
+  HYMN
+  AUTO
+}
+
+enum RecognitionInput {
+  AUDIO
+  TEXT
+}
+
+/// One identification request and what it produced. Audio is never stored.
+model RecognitionAttempt {
+  id                 String           @id @default(uuid()) @db.Uuid
+  mode               RecognitionMode
+  inputType          RecognitionInput @map("input_type")
+  language           String
+  transcript         String
+  normalizedText     String           @map("normalized_text")
+  provider           String?
+  providerConfidence Float?           @map("provider_confidence")
+  providerLatencyMs  Int?             @map("provider_latency_ms")
+  audioMimeType      String?          @map("audio_mime_type")
+  audioBytes         Int?             @map("audio_bytes")
+  candidates         Json
+  topResultType      String?          @map("top_result_type")
+  topResultKey       String?          @map("top_result_key")
+  confidence         Int?
+  totalDurationMs    Int              @map("total_duration_ms")
+  userId             String?          @map("user_id") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("recognition_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  name          String?
+  avatarUrl     String?        @map("avatar_url")
+  roles         String[]       @default(["member"])
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  lastLoginAt   DateTime?      @map("last_login_at")
+  credential    Credential?
+  oauthAccounts OAuthAccount[]
+  sessions      Session[]
+  savedItems    SavedItem[]
+  collections   Collection[]
+  notes         Note[]
+  history       HistoryEntry[]
+
+  @@map("users")
+}
+
+/// Password hash for email/password accounts. Absent for OAuth-only users.
+model Credential {
+  userId       String   @id @map("user_id") @db.Uuid
+  passwordHash String   @map("password_hash")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credentials")
+}
+
+model OAuthAccount {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  provider   String
+  providerId String   @map("provider_id")
+  email      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("user_oauth_accounts")
+}
+
+/// Server-side session; access tokens die with it, so logout is immediate.
+model Session {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  userAgent         String?   @map("user_agent")
+  ip                String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  lastActivityAt    DateTime  @default(now()) @map("last_activity_at")
+  expiresAt         DateTime  @map("expires_at")
+  absoluteExpiresAt DateTime? @map("absolute_expires_at")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+/// Refresh-token ids that were used or revoked, kept until they expire.
+model RevokedToken {
+  tokenId   String   @id @map("token_id")
+  expiresAt DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("revoked_tokens")
+}
+
+/// Pending OAuth sign-in: the PKCE verifier between authorize and callback,
+/// then the one-time exchange code the web app trades for tokens.
+model OAuthSignIn {
+  state        String    @id
+  provider     String
+  codeVerifier String    @map("code_verifier")
+  redirectTo   String?   @map("redirect_to")
+  exchangeCode String?   @unique @map("exchange_code")
+  userId       String?   @map("user_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at")
+  expiresAt    DateTime  @map("expires_at")
+  consumedAt   DateTime? @map("consumed_at")
+
+  @@index([expiresAt])
+  @@map("oauth_sign_ins")
+}
+
+// ---------------------------------------------------------------------------
+// Library
+// ---------------------------------------------------------------------------
+
+enum LibraryTargetType {
+  HYMN
+  VERSE
+}
+
+enum HistoryKind {
+  IDENTIFY
+  SEARCH
+  VIEW
+}
+
+/// A hymn (by slug) or verse (by "KJV:john:3:16" key) a member saved.
+model SavedItem {
+  id         String            @id @default(uuid()) @db.Uuid
+  userId     String            @map("user_id") @db.Uuid
+  targetType LibraryTargetType @map("target_type")
+  targetKey  String            @map("target_key")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetKey])
+  @@map("library_saved_items")
+}
+
+model Collection {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  slug        String
+  name        String
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+
+  @@unique([userId, slug])
+  @@map("library_collections")
+}
+
+model CollectionItem {
+  id           String            @id @default(uuid()) @db.Uuid
+  collectionId String            @map("collection_id") @db.Uuid
+  targetType   LibraryTargetType @map("target_type")
+  targetKey    String            @map("target_key")
+  position     Int
+  note         String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  collection   Collection        @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, targetType, targetKey])
+  @@map("library_collection_items")
+}
+
+model Note {
+  id         String            @id @default(uuid()) @db.Uuid
+  userId     String            @map("user_id") @db.Uuid
+  targetType LibraryTargetType @map("target_type")
+  targetKey  String            @map("target_key")
+  body       String
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetKey])
+  @@map("library_notes")
+}
+
+model HistoryEntry {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @map("user_id") @db.Uuid
+  kind       HistoryKind
+  mode       String?
+  query      String
+  targetType LibraryTargetType? @map("target_type")
+  targetKey  String?            @map("target_key")
+  attemptId  String?            @map("attempt_id") @db.Uuid
+  occurredAt DateTime           @map("occurred_at")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@map("library_history")
+}
