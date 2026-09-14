@@ -18,24 +18,24 @@ const publicCache = { auth: false, next: { revalidate: 3600 } } as const;
 
 export const bible = {
   translations: () => api<{ translations: TranslationDto[] }>("/bible/translations", publicCache),
-  books: (translation: string) => api<{ translation: { code: string; name: string }; books: BookDto[] }>(`/bible/${translation}/books`, publicCache),
-  chapter: (translation: string, book: string, chapter: number) => api<ChapterDto>(`/bible/${translation}/${book}/${chapter}`, publicCache),
+  books: (translation: string) => api<{ translation: { code: string; name: string }; books: BookDto[] }>(`/bible/${encodeURIComponent(translation)}/books`, publicCache),
+  chapter: (translation: string, book: string, chapter: number) => api<ChapterDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}`, publicCache),
   verse: (translation: string, book: string, chapter: number, verse: number, context = 2) =>
-    api<VerseDetailDto>(`/bible/${translation}/${book}/${chapter}/${verse}${q({ context })}`, publicCache),
+    api<VerseDetailDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}/${verse}${q({ context })}`, publicCache),
   search: (translation: string, text: string, limit = 10) =>
-    api<{ translation: { code: string }; query: string; results: VerseSearchHitDto[] }>(`/bible/${translation}/search${q({ q: text, limit })}`, { auth: false }),
+    api<{ translation: { code: string }; query: string; results: VerseSearchHitDto[] }>(`/bible/${encodeURIComponent(translation)}/search${q({ q: text, limit })}`, { auth: false }),
 };
 
 export const hymns = {
   list: (params: { page?: number; limit?: number; hymnal?: string; topic?: string; language?: string } = {}) =>
     api<PageDto<HymnSummaryDto>>(`/hymns${q(params)}`, publicCache),
-  get: (slug: string) => api<HymnDetailDto>(`/hymns/${slug}`, publicCache),
+  get: (slug: string) => api<HymnDetailDto>(`/hymns/${encodeURIComponent(slug)}`, publicCache),
   search: (text: string, limit = 10) => api<{ query: string; results: HymnSearchHitDto[] }>(`/hymns/search${q({ q: text, limit })}`, { auth: false }),
   hymnals: () => api<{ hymnals: HymnalDto[] }>("/hymnals", publicCache),
-  hymnal: (slug: string, page = 1, limit = 50) => api<{ hymnal: HymnalDto; entries: PageDto<HymnalEntryDto> }>(`/hymnals/${slug}${q({ page, limit })}`, publicCache),
-  byNumber: (slug: string, number: number) => api<HymnDetailDto>(`/hymnals/${slug}/${number}`, publicCache),
+  hymnal: (slug: string, page = 1, limit = 50) => api<{ hymnal: HymnalDto; entries: PageDto<HymnalEntryDto> }>(`/hymnals/${encodeURIComponent(slug)}${q({ page, limit })}`, publicCache),
+  byNumber: (slug: string, number: number) => api<HymnDetailDto>(`/hymnals/${encodeURIComponent(slug)}/${number}`, publicCache),
   forVerse: (translation: string, book: string, chapter: number, verse: number) =>
-    api<{ reference: string; hymns: { slug: string; title: string; firstLine: string | null }[] }>(`/bible/${translation}/${book}/${chapter}/${verse}/related`, publicCache),
+    api<{ reference: string; hymns: { slug: string; title: string; firstLine: string | null }[] }>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}/${verse}/related`, publicCache),
 };
 
 export const search = {
@@ -52,7 +52,7 @@ export const recognition = {
     form.set("language", language);
     return api<RecognitionResultDto>("/recognize/audio", { method: "POST", body: form });
   },
-  attempt: (id: string) => api<RecognitionResultDto>(`/recognize/attempts/${id}`, { auth: false }),
+  attempt: (id: string) => api<RecognitionResultDto>(`/recognize/attempts/${encodeURIComponent(id)}`, { auth: false }),
 };
 
 export const auth = {
@@ -69,14 +69,14 @@ export const library = {
   save: (type: LibraryTargetType, key: string) => api<SavedItemDto>("/library/saved", { method: "POST", body: { type, key } }),
   unsave: (type: LibraryTargetType, key: string) => api<void>(`/library/saved/${type}/${encodeURIComponent(key)}`, { method: "DELETE" }),
   collections: () => api<{ collections: CollectionDto[] }>("/library/collections"),
-  collection: (slug: string) => api<CollectionDetailDto>(`/library/collections/${slug}`),
+  collection: (slug: string) => api<CollectionDetailDto>(`/library/collections/${encodeURIComponent(slug)}`),
   createCollection: (name: string, description?: string | null) => api<CollectionDto>("/library/collections", { method: "POST", body: { name, description } }),
-  updateCollection: (slug: string, patch: { name?: string; description?: string | null }) => api<CollectionDto>(`/library/collections/${slug}`, { method: "PATCH", body: patch }),
-  deleteCollection: (slug: string) => api<void>(`/library/collections/${slug}`, { method: "DELETE" }),
+  updateCollection: (slug: string, patch: { name?: string; description?: string | null }) => api<CollectionDto>(`/library/collections/${encodeURIComponent(slug)}`, { method: "PATCH", body: patch }),
+  deleteCollection: (slug: string) => api<void>(`/library/collections/${encodeURIComponent(slug)}`, { method: "DELETE" }),
   addToCollection: (slug: string, type: LibraryTargetType, key: string, note?: string | null) =>
-    api<CollectionItemDto>(`/library/collections/${slug}/items`, { method: "POST", body: { type, key, note } }),
+    api<CollectionItemDto>(`/library/collections/${encodeURIComponent(slug)}/items`, { method: "POST", body: { type, key, note } }),
   removeFromCollection: (slug: string, type: LibraryTargetType, key: string) =>
-    api<void>(`/library/collections/${slug}/items/${type}/${encodeURIComponent(key)}`, { method: "DELETE" }),
+    api<void>(`/library/collections/${encodeURIComponent(slug)}/items/${type}/${encodeURIComponent(key)}`, { method: "DELETE" }),
   notes: () => api<{ notes: NoteDto[] }>("/library/notes"),
   putNote: (type: LibraryTargetType, key: string, body: string) => api<NoteDto>(`/library/notes/${type}/${encodeURIComponent(key)}`, { method: "PUT", body: { body } }),
   deleteNote: (type: LibraryTargetType, key: string) => api<void>(`/library/notes/${type}/${encodeURIComponent(key)}`, { method: "DELETE" }),

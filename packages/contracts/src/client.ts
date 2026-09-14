@@ -92,9 +92,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
   const request: ApiRequest = async <T>(path: string, requestOptions: RequestOptions = {}): Promise<T> => {
     const { extra } = requestOptions;
-    const extraHeaders = extra !== undefined && typeof extra === "object" && "headers" in extra ? (extra as { headers?: Record<string, string> }).headers : undefined;
+    const extraHeaders = extra !== undefined && typeof extra === "object" && "headers" in extra ? (extra as { headers?: HeadersInit }).headers : undefined;
     const attempt = (token: string | null): Promise<Response> => {
-      const headers: Record<string, string> = { accept: "application/json", ...extraHeaders };
+      // Accept plain objects, arrays and Headers instances alike.
+      const headers: Record<string, string> = { accept: "application/json" };
+      if (extraHeaders !== undefined) new Headers(extraHeaders).forEach((value, key) => { headers[key] = value; });
       const body = requestOptions.body;
       if (body !== undefined && !isFormData(body)) headers["content-type"] = "application/json";
       if (token !== null) headers.authorization = `Bearer ${token}`;
@@ -103,7 +105,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         method: requestOptions.method ?? "GET",
         headers,
         body: body === undefined ? undefined : isFormData(body) ? body : JSON.stringify(body),
-        signal: requestOptions.signal,
+        signal: requestOptions.signal ?? (extra as { signal?: AbortSignal } | undefined)?.signal,
       });
     };
 
@@ -125,6 +127,8 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       tokenSource = source;
     },
     setBaseUrl(url) {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error("The API address must start with http:// or https://");
       baseUrl = url.replace(/\/$/, "");
     },
     getBaseUrl() {

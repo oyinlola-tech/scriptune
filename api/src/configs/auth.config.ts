@@ -33,9 +33,17 @@ function toSecret(key: string, value: unknown): string {
   return secret;
 }
 
+/** The values shipped in the .env examples; long enough to pass the length check, so caught by name. */
+const PLACEHOLDER_SECRET = /change-me|placeholder|example|replace-this/i;
+
 export function readAuthConfig(manager: ConfigManager): AuthConfig {
   const accessSecret = toSecret("AUTH_ACCESS_SECRET", manager.get("auth_access_secret"));
   const refreshSecret = toSecret("AUTH_REFRESH_SECRET", manager.get("auth_refresh_secret"));
+  if (manager.get("node_env") === "production") {
+    for (const [key, secret] of [["AUTH_ACCESS_SECRET", accessSecret], ["AUTH_REFRESH_SECRET", refreshSecret]] as const) {
+      if (PLACEHOLDER_SECRET.test(secret)) throw configError(key, "is the example value; generate a real secret before running in production");
+    }
+  }
   if (accessSecret === refreshSecret) {
     throw configError("AUTH_REFRESH_SECRET", "must differ from AUTH_ACCESS_SECRET");
   }

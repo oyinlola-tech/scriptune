@@ -56,11 +56,8 @@ export default function IdentifyScreen() {
   // that recorder is idle again, so a connection change mid-clip cannot swap the
   // button out from under a running recording or start a second capture.
   const [active, setActive] = useState<"server" | "device" | null>(null);
-  const path = active ?? (online ? "server" : hasModel ? "device" : null);
-  useEffect(() => {
-    if (active === "server" && recorder.status === "idle") setActive(null);
-    if (active === "device" && localRecorder.status === "idle") setActive(null);
-  }, [active, recorder.status, localRecorder.status]);
+  const stillRunning = (active === "server" && recorder.status !== "idle") || (active === "device" && localRecorder.status !== "idle");
+  const path = stillRunning ? active : online ? "server" : hasModel ? "device" : null;
   const startListening = () => {
     if (path === "server") { setActive("server"); void recorder.start(); }
     else if (path === "device") { setActive("device"); void localRecorder.start(); }
@@ -78,7 +75,7 @@ export default function IdentifyScreen() {
   const startRef = useRef<() => void>(() => undefined);
   useEffect(() => {
     startRef.current = () => {
-      if (active === null && recorder.status === "idle" && localRecorder.status === "idle") startListening();
+      if (recorder.status === "idle" && localRecorder.status === "idle") startListening();
     };
   });
   useFocusEffect(useCallback(() => {

@@ -12,7 +12,7 @@ export const recognitionModeSchema = z
  * hymns in every language, so Yoruba, English or any other tongue works
  * without the app having to know in advance.
  */
-export const recognitionLanguageSchema = z.union([z.literal("auto"), languageSchema]).default("auto");
+export const recognitionLanguageSchema = z.union([z.literal("auto"), z.string().trim().regex(/^[a-z]{2}$/, "Use a two-letter language code such as en or yo, or auto.")]).default("auto");
 
 export const recognizeTextBodySchema = z.object({
   text: z.string().trim().min(2).max(MAX_RECOGNITION_TEXT_LENGTH),

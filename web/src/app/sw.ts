@@ -26,6 +26,7 @@ const API_ORIGIN = (() => {
  */
 const runtimeCaching: RuntimeCaching[] = [
   { matcher: ({ url }) => url.origin === API_ORIGIN, handler: new NetworkOnly() },
+  { matcher: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith("/auth/"), handler: new NetworkOnly() },
   ...defaultCache,
 ];
 

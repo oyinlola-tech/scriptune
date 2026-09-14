@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { auth as authApi, refreshTokens, setTokenSource, type AuthSessionDto, type UserDto } from "@/lib/api";
+import { ApiError, auth as authApi, refreshTokens, setTokenSource, type AuthSessionDto, type UserDto } from "@/lib/api";
 import { useGuestHistory } from "@/lib/history/guest-history";
 
 export type AuthStatus = "loading" | "guest" | "member";
@@ -19,6 +19,17 @@ interface AuthState {
 }
 
 let refreshing: Promise<string | null> | null = null;
+
+/**
+ * Refresh tokens are single-use, and the server treats a replay as theft and
+ * revokes every session. Two tabs restoring at once must therefore take turns
+ * across the whole browser, not just within one tab. Falls back to no lock
+ * where the Web Locks API is missing (old Safari), which is the old behaviour.
+ */
+function withBrowserLock<T>(work: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+  return locks === undefined ? work() : (locks.request("scriptune.auth.refresh", () => work()) as Promise<T>);
+}
 
 /**
  * Called once the persisted state is on hand: a stored refresh token becomes
@@ -68,7 +79,9 @@ export const useAuthStore = create<AuthState>()(
 
       refresh: async () => {
         if (refreshing !== null) return refreshing;
-        refreshing = (async () => {
+        refreshing = withBrowserLock(async () => {
+          // Another tab may have rotated the token while we waited for the lock.
+          await useAuthStore.persist.rehydrate();
           const { refreshToken } = get();
           if (refreshToken === null) {
             set({ status: "guest", user: null, accessToken: null });
@@ -78,8 +91,9 @@ export const useAuthStore = create<AuthState>()(
           try {
             tokens = await refreshTokens(refreshToken);
           } catch {
-            // Transient (429, 5xx, offline): keep the refresh token so a later attempt can recover.
-            set({ status: "guest", accessToken: null });
+            // Transient (429, 5xx, offline): keep the token and the signed-in state so the
+            // person is not bounced to the login page; the next request refreshes again.
+            set({ status: get().user === null ? "guest" : "member", accessToken: null });
             return null;
           }
           if (tokens === null) {
@@ -88,7 +102,7 @@ export const useAuthStore = create<AuthState>()(
           }
           set({ status: "member", accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
           return tokens.accessToken;
-        })().finally(() => {
+        }).finally(() => {
           refreshing = null;
         });
         return refreshing;
@@ -100,8 +114,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { user } = await authApi.me();
           set({ user });
-        } catch {
-          await get().signOut({ remote: false });
+        } catch (error) {
+          // Only a definite "not you" ends the session. Being offline or a server
+          // hiccup keeps the stored user and the guest history intact.
+          if (error instanceof ApiError && (error.status === 401 || error.status === 403)) await get().signOut({ remote: false });
         }
       },
     }),

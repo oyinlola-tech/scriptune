@@ -13,6 +13,8 @@ export const DEFAULT_LOG_LEVEL = "info";
 export const DEFAULT_RATE_LIMIT_MAX = 300;
 export const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
 
+/** Requests per minute per client IP on /search; the fuzzy fallback can cost hundreds of milliseconds each. */
+export const SEARCH_RATE_LIMIT_MAX = 60;
 export const DEFAULT_WHISPER_URL = "http://localhost:5005";
 export const DEFAULT_WHISPER_TIMEOUT_MS = 60_000;
 export const DEFAULT_ACCESS_TTL_SECONDS = 15 * 60;

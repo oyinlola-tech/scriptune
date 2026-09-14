@@ -6,8 +6,12 @@ import { ApiError, recognition } from "@/lib/api";
 
 type Params = Promise<{ attemptId: string }>;
 
+const ATTEMPT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function load(params: Params) {
   const { attemptId } = await params;
+  // Anything but an id is a 404 here, never a request the API has to refuse.
+  if (!ATTEMPT_ID.test(attemptId)) return null;
   try {
     return await recognition.attempt(attemptId);
   } catch (error) {

@@ -8,10 +8,13 @@ its own FFmpeg), resampled to 16 kHz mono, and handed to Whisper.
     GET  /health
 
 Environment:
-    WHISPER_MODEL   tiny | base | small | medium | large | turbo   (default: small)
-                    All of these are multilingual; never use a ".en" model here.
-    WHISPER_DEVICE  cpu | cuda                                     (default: cpu)
-    WHISPER_THREADS CPU threads for PyTorch                        (default: all cores)
+    WHISPER_MODEL        tiny | base | small | medium | large | turbo   (default: small)
+                         All of these are multilingual; never use a ".en" model here.
+    WHISPER_DEVICE       cpu | cuda                                     (default: cpu)
+    WHISPER_THREADS      CPU threads for PyTorch                        (default: all cores)
+    WHISPER_CACHE        where model files live                         (default: ~/.cache/whisper)
+    WHISPER_MAX_BYTES    largest upload accepted                        (default: 25 MB)
+    WHISPER_MAX_SECONDS  longest clip accepted after decoding           (default: 60)
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ import math
 import os
 import threading
 import time
+import urllib.error
 import urllib.request
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -34,11 +38,15 @@ import torch
 import whisper
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
+from whisper.tokenizer import LANGUAGES
 
 MODEL_NAME = os.environ.get("WHISPER_MODEL", "small")
 DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
 THREADS = int(os.environ.get("WHISPER_THREADS", "0") or 0)
 MAX_BYTES = int(os.environ.get("WHISPER_MAX_BYTES", str(25 * 1024 * 1024)))
+MAX_SECONDS = float(os.environ.get("WHISPER_MAX_SECONDS", "60"))
+# How long a request waits for the single Whisper slot before answering 503.
+BUSY_TIMEOUT_S = float(os.environ.get("WHISPER_BUSY_TIMEOUT", "20"))
 SAMPLE_RATE = 16_000
 CACHE_DIR = Path(os.environ.get("WHISPER_CACHE", Path.home() / ".cache" / "whisper"))
 # Smallest first: whichever of these is already on disk serves requests while
@@ -53,7 +61,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [%(n
 
 _model: whisper.Whisper | None = None
 _model_name: str | None = None
-# Whisper is CPU-bound and not safe to share across threads, so requests take turns.
+_load_error: str | None = None
+# Whisper is CPU-bound and not safe to share across threads, so requests take
+# turns: the semaphore bounds how many wait, the lock guards the model itself.
+_slot = asyncio.Semaphore(1)
 _lock = threading.Lock()
 
 
@@ -96,20 +107,22 @@ def download_model(name: str) -> Path:
         try:
             request = urllib.request.Request(url, headers={"Range": f"bytes={have}-"} if have else {})
             with urllib.request.urlopen(request, timeout=60) as source:
-                status = source.status
-                if status == 200 and have:
+                if source.status == 200 and have:
                     have = 0  # server ignored the range: start again
                 total = have + int(source.headers.get("Content-Length") or 0)
-                if status == 416:
-                    pass  # nothing left to fetch; verify below
-                else:
-                    log.info("Downloading Whisper %s (%.0f of %.0f MB)", name, have / 1e6, total / 1e6)
-                    with part.open("ab" if have else "wb") as output:
-                        while True:
-                            chunk = source.read(1 << 20)
-                            if not chunk:
-                                break
-                            output.write(chunk)
+                log.info("Downloading Whisper %s (%.0f of %.0f MB)", name, have / 1e6, total / 1e6)
+                with part.open("ab" if have else "wb") as output:
+                    while True:
+                        chunk = source.read(1 << 20)
+                        if not chunk:
+                            break
+                        output.write(chunk)
+        except urllib.error.HTTPError as error:
+            if error.code != 416:  # 416 = nothing left to fetch; fall through to verification
+                delay = min(60, 5 * attempt)
+                log.warning("Download of %s failed (HTTP %s); retrying in %ss", name, error.code, delay)
+                time.sleep(delay)
+                continue
         except Exception as error:  # noqa: BLE001 - any network error: back off and resume
             delay = min(60, 5 * attempt)
             log.warning("Download of %s interrupted (%s); retrying in %ss", name, error, delay)
@@ -124,17 +137,23 @@ def download_model(name: str) -> Path:
 
 
 def _load(path: Path, name: str) -> None:
-    global _model, _model_name
+    global _model, _model_name, _load_error
     started = time.perf_counter()
     loaded = whisper.load_model(str(path), device=DEVICE)
     with _lock:
         _model, _model_name = loaded, name
+    _load_error = None
     log.info("Whisper %s ready in %.1fs", name, time.perf_counter() - started)
 
 
 def _fetch_wanted_in_background() -> None:
     """Download the wanted model with retries, then swap it in without a restart."""
-    _load(download_model(MODEL_NAME), MODEL_NAME)
+    global _load_error
+    try:
+        _load(download_model(MODEL_NAME), MODEL_NAME)
+    except Exception as error:  # noqa: BLE001 - surfaced on /health rather than lost in a thread
+        _load_error = f"{MODEL_NAME}: {error}"
+        log.error("Could not load Whisper %s: %s", MODEL_NAME, error)
 
 
 @asynccontextmanager
@@ -166,21 +185,33 @@ app = FastAPI(title="Scriptune transcriber", version="0.1.0", lifespan=lifespan)
 
 
 def decode_audio(data: bytes) -> np.ndarray:
-    """Any container FFmpeg understands (webm/opus, m4a/aac, wav, mp3...) -> float32 mono 16 kHz."""
+    """Any container FFmpeg understands (webm/opus, m4a/aac, wav, mp3...) -> float32 mono 16 kHz.
+
+    Refuses clips longer than MAX_SECONDS while decoding, so a few MB of
+    low-bitrate audio cannot expand into hundreds of MB of samples.
+    """
+    max_samples = int(SAMPLE_RATE * MAX_SECONDS)
     try:
         container = av.open(io.BytesIO(data))
     except DECODE_ERRORS as error:
         raise HTTPException(status_code=415, detail=f"Audio could not be decoded: {error}") from error
     with container:
+        if container.duration is not None and container.duration / av.time_base > MAX_SECONDS:
+            raise HTTPException(status_code=413, detail=f"Recordings longer than {MAX_SECONDS:.0f} seconds are not accepted.")
         stream = next((s for s in container.streams if s.type == "audio"), None)
         if stream is None:
             raise HTTPException(status_code=415, detail="The upload has no audio track.")
         resampler = av.AudioResampler(format="s16", layout="mono", rate=SAMPLE_RATE)
         chunks: list[np.ndarray] = []
+        total = 0
         try:
             for frame in container.decode(stream):
                 for resampled in resampler.resample(frame):
-                    chunks.append(resampled.to_ndarray())
+                    array = resampled.to_ndarray()
+                    total += array.shape[-1]
+                    if total > max_samples:
+                        raise HTTPException(status_code=413, detail=f"Recordings longer than {MAX_SECONDS:.0f} seconds are not accepted.")
+                    chunks.append(array)
             for resampled in resampler.resample(None):
                 chunks.append(resampled.to_ndarray())
         except DECODE_ERRORS as error:
@@ -192,44 +223,66 @@ def decode_audio(data: bytes) -> np.ndarray:
 
 
 def run_whisper(audio: np.ndarray, language: str | None, prompt: str | None) -> dict[str, Any]:
-    assert _model is not None
-    options: dict[str, Any] = {"fp16": DEVICE != "cpu", "word_timestamps": True, "task": "transcribe"}
-    if language:
-        options["language"] = language
-    if prompt:
-        options["initial_prompt"] = prompt
     with _lock:
+        assert _model is not None
+        options: dict[str, Any] = {"fp16": DEVICE != "cpu", "word_timestamps": True, "task": "transcribe"}
+        if language:
+            options["language"] = language
+        if prompt:
+            options["initial_prompt"] = prompt
         result = _model.transcribe(audio, **options)
         result["_model"] = _model_name
         return result
 
 
+async def read_body(request: Request) -> bytes:
+    """Reject by Content-Length first, then stream with a running cap; never buffer an unbounded body."""
+    declared = request.headers.get("content-length")
+    if declared is not None and declared.isdigit() and int(declared) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail=f"Audio is larger than {MAX_BYTES} bytes.")
+    parts: list[bytes] = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > MAX_BYTES:
+            raise HTTPException(status_code=413, detail=f"Audio is larger than {MAX_BYTES} bytes.")
+        parts.append(chunk)
+    return b"".join(parts)
+
+
 @app.get("/health")
 async def health() -> dict[str, Any]:
-    return {"status": "ok" if _model is not None else "loading", "model": _model_name, "wanted": MODEL_NAME, "device": DEVICE}
+    return {"status": "ok" if _model is not None else "loading", "model": _model_name, "wanted": MODEL_NAME, "device": DEVICE, "error": _load_error}
 
 
 @app.post("/transcribe")
 async def transcribe(
     request: Request,
-    language: str | None = Query(default=None, description="BCP-47 language such as en or yo; omit to auto-detect"),
-    prompt: str | None = Query(default=None, description="Vocabulary to favour, e.g. hymn titles"),
+    language: str | None = Query(default=None, description="ISO 639-1 code such as en or yo; omit to auto-detect"),
+    prompt: str | None = Query(default=None, max_length=500, description="Vocabulary to favour, e.g. hymn titles"),
 ) -> JSONResponse:
     if _model is None:
         raise HTTPException(status_code=503, detail=f"Whisper {MODEL_NAME} is still downloading; try again shortly.")
-    data = await request.body()
+    # Whisper takes only the primary language subtag ("en", not "en-GB") and only ones it knows.
+    lang = language.split("-")[0].lower() if language else None
+    if lang is not None and lang not in LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Unsupported language {language!r}; use a two-letter code Whisper knows, or omit it.")
+    data = await read_body(request)
     if not data:
         raise HTTPException(status_code=400, detail="Send the audio as the request body.")
-    if len(data) > MAX_BYTES:
-        raise HTTPException(status_code=413, detail=f"Audio is larger than {MAX_BYTES} bytes.")
 
-    started = time.perf_counter()
-    audio = await asyncio.to_thread(decode_audio, data)
-    if audio.size < SAMPLE_RATE // 10:
-        raise HTTPException(status_code=422, detail="The recording is too short to transcribe.")
-    # Whisper takes only the primary language subtag ("en", not "en-GB").
-    lang = language.split("-")[0].lower() if language else None
-    result = await asyncio.to_thread(run_whisper, audio, lang, prompt)
+    try:
+        await asyncio.wait_for(_slot.acquire(), timeout=BUSY_TIMEOUT_S)
+    except (asyncio.TimeoutError, TimeoutError):
+        raise HTTPException(status_code=503, detail="The transcriber is busy; try again in a moment.", headers={"Retry-After": "5"}) from None
+    try:
+        started = time.perf_counter()
+        audio = await asyncio.to_thread(decode_audio, data)
+        if audio.size < SAMPLE_RATE // 10:
+            raise HTTPException(status_code=422, detail="The recording is too short to transcribe.")
+        result = await asyncio.to_thread(run_whisper, audio, lang, prompt)
+    finally:
+        _slot.release()
 
     words = [
         {

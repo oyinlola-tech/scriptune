@@ -1,4 +1,4 @@
-import { ExternalServiceError } from "@zudojs/errors";
+import { ExternalServiceError, GatewayTimeoutError } from "@zudojs/errors";
 import type { TranscribedWord, TranscriptionInput, TranscriptionProvider, TranscriptionResult } from "../../interfaces/index.js";
 
 export interface WhisperProviderOptions {
@@ -56,6 +56,9 @@ export class WhisperTranscriptionProvider implements TranscriptionProvider {
         signal: signal === undefined ? timeout : AbortSignal.any([signal, timeout]),
       });
     } catch (error) {
+      if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+        throw new GatewayTimeoutError(`The transcriber did not answer within ${Math.round(this.options.timeoutMs / 1000)} seconds.`, { cause: error });
+      }
       throw new ExternalServiceError("The transcriber service could not be reached. Is it running?", { service: "whisper", cause: error });
     }
     if (!response.ok) {

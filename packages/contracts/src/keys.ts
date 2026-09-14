@@ -18,6 +18,7 @@ export function parseVerseKey(key: string): VerseKeyParts | null {
   const parts = key.split(":");
   if (parts.length !== 4) return null;
   const [translation, book, chapterText, verseText] = parts as [string, string, string, string];
+  if (!/^\d+$/.test(chapterText) || !/^\d+$/.test(verseText)) return null;
   const chapter = Number(chapterText);
   const verse = Number(verseText);
   if (translation === "" || book === "" || !Number.isInteger(chapter) || !Number.isInteger(verse) || chapter < 1 || verse < 1) return null;

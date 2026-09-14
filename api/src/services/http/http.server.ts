@@ -24,7 +24,9 @@ export function createAppHttpServer(options: AppHttpServerOptions): HttpServer {
   const adapter = createNodeHttpAdapter({
     host: config.host,
     port: config.port,
-    trustProxy: config.trustProxy > 0 ? config.trustProxy : false,
+    // A hop count. @zudojs/http types accept a number but its compiler trusts nothing for one;
+    // it does honour a predicate, so the count becomes "hops closer to the peer than n".
+    trustProxy: config.trustProxy > 0 ? ((((_address: string, hop: number) => hop < config.trustProxy) as unknown) as boolean) : false,
     maxBodySize: MAX_REQUEST_BODY_BYTES,
     shutdownGraceMs: SHUTDOWN_TIMEOUT_MS,
   });

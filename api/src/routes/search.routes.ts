@@ -1,13 +1,19 @@
+import type { HttpMiddleware } from "@zudojs/http";
 import type { SearchController } from "../controllers/index.js";
 import type { RouteSpec } from "../utils/http/route.helper.js";
 
+export interface SearchRouteMiddleware {
+  readonly rateLimit: HttpMiddleware;
+}
+
 /** Unified search endpoint. */
-export function createSearchRoutes(controller: SearchController): readonly RouteSpec[] {
+export function createSearchRoutes(controller: SearchController, middleware: SearchRouteMiddleware): readonly RouteSpec[] {
   return [
     {
       method: "GET",
       path: "/search",
       name: "search.all",
+      middleware: [middleware.rateLimit],
       handler: (context) => controller.search(context),
       openapi: {
         summary: "Search verses and hymns at once",

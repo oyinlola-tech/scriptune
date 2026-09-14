@@ -12,6 +12,8 @@ export function createPrismaClient(databaseUrl: string): PrismaClient {
     connectionString: databaseUrl,
     max: POOL_MAX,
     idleTimeoutMillis: 30_000,
+    // Waiting for a free connection longer than this means Postgres is saturated; fail the request instead.
+    connectionTimeoutMillis: 5_000,
     statement_timeout: STATEMENT_TIMEOUT_MS,
   });
   return new PrismaClient({ adapter });

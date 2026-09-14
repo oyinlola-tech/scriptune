@@ -14,7 +14,6 @@ const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 /** The API address baked into this build (EXPO_PUBLIC_API_URL, else app.json "extra"). */
 export const DEFAULT_API_URL = (process.env.EXPO_PUBLIC_API_URL ?? extra.apiUrl ?? "http://localhost:4000").replace(/\/$/, "");
 if (!__DEV__ && /^https?:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(DEFAULT_API_URL)) {
-  // eslint-disable-next-line no-console
   console.error(`Scriptune was built without a public API address (EXPO_PUBLIC_API_URL); it is pointing at ${DEFAULT_API_URL}.`);
 }
 export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? extra.siteUrl ?? "http://localhost:3001").replace(/\/$/, "");

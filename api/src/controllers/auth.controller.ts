@@ -1,5 +1,5 @@
 import type { CommandBus, QueryBus } from "@zudojs/cqrs";
-import { ValidationError } from "@zudojs/errors";
+import { ValidationError, NotFoundError } from "@zudojs/errors";
 import {
   createResponseContext,
   type HttpRouterContext,
@@ -222,7 +222,10 @@ export class AuthController {
   private webRedirect(
     params: Readonly<Record<string, string>>,
   ): HttpResponseContext {
-    return this.redirectWithParams(this.options.webCallbackUrl ?? "/", params);
+    if (this.options.webCallbackUrl === null) {
+      throw new NotFoundError("Google sign-in is not enabled.");
+    }
+    return this.redirectWithParams(this.options.webCallbackUrl, params);
   }
 
   private redirectWithParams(

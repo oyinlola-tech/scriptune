@@ -31,9 +31,13 @@ export function useRecorder(options: RecorderOptions) {
   const frameRef = useRef<number>(0);
   const startedAtRef = useRef<number>(0);
   const onClipRef = useRef(options.onClip);
+  const mountedRef = useRef(true);
   useEffect(() => {
     onClipRef.current = options.onClip;
   }, [options.onClip]);
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
 
   const cleanup = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
@@ -60,7 +64,12 @@ export function useRecorder(options: RecorderOptions) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     } catch {
-      setStatus("denied");
+      if (mountedRef.current) setStatus("denied");
+      return;
+    }
+    if (!mountedRef.current) {
+      // The screen went away while the browser was asking; release the microphone at once.
+      stream.getTracks().forEach((track) => track.stop());
       return;
     }
     streamRef.current = stream;
@@ -78,7 +87,7 @@ export function useRecorder(options: RecorderOptions) {
       try {
         await onClipRef.current(blob);
       } finally {
-        setStatus("idle");
+        if (mountedRef.current) setStatus("idle");
       }
     };
 
