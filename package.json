@@ -1,0 +1,29 @@
+{
+  "name": "scriptune",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Root launcher for the Scriptune API, web app, mobile app, and local Whisper transcriber.",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web-only": "node scripts/dev.mjs --no-mobile",
+    "dev:api": "npm --prefix api run dev",
+    "dev:web": "npm --prefix web run dev",
+    "dev:mobile": "npm --prefix mobile run start",
+    "dev:transcriber": "node scripts/dev.mjs --only transcriber",
+    "infra:up": "docker compose -f docker/compose.yml up -d --wait",
+    "infra:down": "docker compose -f docker/compose.yml down",
+    "stop": "npm run infra:down",
+    "setup": "npm install && npm --prefix packages/contracts install && npm --prefix api install && npm --prefix web install && npm --prefix mobile install && npm run setup:transcriber",
+    "setup:transcriber": "python3 -m venv transcriber/.venv && transcriber/.venv/bin/pip install --upgrade pip && transcriber/.venv/bin/pip install -r transcriber/requirements.txt && transcriber/.venv/bin/python -c \"import whisper; whisper.load_model('tiny')\"",
+    "db:migrate": "npm --prefix api run db:migrate",
+    "typecheck": "npm --prefix packages/contracts run typecheck && npm --prefix api run typecheck && npm --prefix web run typecheck && npm --prefix mobile run typecheck",
+    "test": "npm --prefix api test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
