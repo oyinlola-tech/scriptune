@@ -1,0 +1,25 @@
+{
+  "name": "@scriptune/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Shared API contracts for Scriptune clients: DTO types, keys, and a platform-neutral API client.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
