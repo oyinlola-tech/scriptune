@@ -1,0 +1,153 @@
+{
+  "expo": {
+    "name": "Scriptune",
+    "slug": "scriptune",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "scriptune",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "site.oyinlola.scriptune",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Scriptune listens for a few seconds to identify the hymn or verse being sung or read.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "site.oyinlola.scriptune",
+      "adaptiveIcon": {
+        "backgroundColor": "#f6f2e9",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f6f2e9",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 96,
+          "dark": {
+            "backgroundColor": "#171513"
+          }
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Scriptune listens for a few seconds to identify the hymn or verse being sung or read."
+        }
+      ],
+      "expo-secure-store",
+      "expo-asset",
+      "expo-web-browser",
+      "expo-sqlite",
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Listen",
+              "label": "Scriptune: Listen",
+              "description": "Tap to identify the hymn or verse playing around you.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "none",
+              "previewImage": "./assets/widgets/listen-preview.png"
+            },
+            {
+              "name": "Search",
+              "label": "Scriptune: Search",
+              "description": "Jump straight to searching hymns and verses.",
+              "minWidth": "250dp",
+              "minHeight": "60dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/widgets/search-preview.png"
+            },
+            {
+              "name": "Verse",
+              "label": "Scriptune: Verse of the day",
+              "description": "A Bible verse each day. Tap to read the passage.",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widgets/verse-preview.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ],
+      [
+        "expo-quick-actions",
+        {
+          "androidIcons": {
+            "listen": {
+              "foregroundImage": "./assets/images/android-icon-foreground.png",
+              "backgroundColor": "#1c1917"
+            },
+            "search": {
+              "foregroundImage": "./assets/images/android-icon-foreground.png",
+              "backgroundColor": "#c9a34a"
+            }
+          },
+          "iosActions": [
+            {
+              "id": "listen",
+              "title": "Listen now",
+              "subtitle": "Identify what is playing",
+              "icon": "symbol:mic.fill",
+              "params": {
+                "href": "/listen"
+              }
+            },
+            {
+              "id": "search",
+              "title": "Search",
+              "subtitle": "Hymns and verses",
+              "icon": "symbol:magnifyingglass",
+              "params": {
+                "href": "/search"
+              }
+            }
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "backgroundColor": "#f6f2e9",
+    "extra": {
+      "apiUrl": "http://localhost:4000",
+      "siteUrl": "http://localhost:3001",
+      "router": {},
+      "eas": {
+        "projectId": "3792c956-449b-4dfc-855b-869c1be7942a"
+      }
+    },
+    "owner": "oyinlola141"
+  }
+}
