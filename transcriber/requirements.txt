@@ -1,0 +1,9 @@
+# CPU-only PyTorch keeps the install small; drop the extra index for a CUDA build.
+--extra-index-url https://download.pytorch.org/whl/cpu
+openai-whisper>=20250625
+torch>=2.6
+fastapi>=0.115
+uvicorn[standard]>=0.34
+av>=14.0
+numpy>=1.26
+ 
