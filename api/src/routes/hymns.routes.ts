@@ -48,6 +48,19 @@ export function createHymnRoutes(controller: HymnsController): readonly RouteSpe
     },
     {
       method: "GET",
+      path: "/hymns/:slug/related",
+      name: "hymns.getRelated",
+      handler: (context) => controller.getRelated(context),
+      openapi: {
+        summary: "Hymns worth reading after this one",
+        description: "Paired ahead of time by likeness of wording and shared scripture, each with its reason. Cacheable for a day.",
+        tags: TAGS,
+        parameters: [slugParam, { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 6 } }],
+        responses: { "200": { description: "Related hymns, most alike first; an empty list when none are known." }, "404": notFound },
+      },
+    },
+    {
+      method: "GET",
       path: "/hymns/:slug",
       name: "hymns.get",
       handler: (context) => controller.get(context),

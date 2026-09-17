@@ -16,6 +16,8 @@ const pageLimitSchema = z.coerce.number().int().min(1).max(100).default(25);
 
 export const hymnParamsSchema = z.object({ slug: slugSchema });
 
+export const relatedHymnsQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(6).default(5) });
+
 export const hymnListQuerySchema = z.object({
   page: pageSchema,
   limit: pageLimitSchema,

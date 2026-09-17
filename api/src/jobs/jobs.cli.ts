@@ -4,6 +4,7 @@ import { runImportCrossReferencesJob } from "./importCrossReferences/index.js";
 import { runImportHymnalJob } from "./importHymnal/index.js";
 import { runImportHymnsJob } from "./importHymns/index.js";
 import { runLinkScripturesJob } from "./linkScriptures/index.js";
+import { runRelateHymnsJob } from "./relateHymns/index.js";
 
 const USAGE = `Usage: node --import tsx src/jobs/jobs.cli.ts <job> [options]
 
@@ -13,6 +14,7 @@ Jobs:
   import:hymns   Import Sacred Songs and Solos (--file <path> | --url <url>)
   import:hymnal  Import any hymnal from a JSON file (--file <path>); carries its own rights status
   link:scriptures  Find where the English hymns quote the King James Version (run after importing hymns)
+  link:hymns     Pair each hymn with the hymns most like it (run after link:scriptures)
 `;
 
 const { values, positionals } = parseArgs({
@@ -54,6 +56,10 @@ switch (job) {
   }
   case "link:scriptures": {
     await runLinkScripturesJob();
+    break;
+  }
+  case "link:hymns": {
+    await runRelateHymnsJob();
     break;
   }
   case "import:hymns": {

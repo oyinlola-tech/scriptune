@@ -1,12 +1,13 @@
 import type { QueryBus } from "@zudojs/cqrs";
 import type { HttpRouterContext, HttpResponseContext } from "@zudojs/http";
 import { EXPORT_CACHE_SECONDS } from "../constants/index.js";
-import type { HymnalDto, HymnalExportDto, HymnDetailDto, HymnSummaryDto, PageDto } from "../dtos/index.js";
+import type { HymnalDto, HymnalExportDto, HymnDetailDto, HymnSummaryDto, PageDto, RelatedHymnsDto } from "../dtos/index.js";
 import {
   GetHymnalEntryQuery,
   ExportHymnalQuery,
   GetHymnalQuery,
   GetHymnQuery,
+  GetRelatedHymnsQuery,
   ListHymnalsQuery,
   ListHymnsForVerseQuery,
   ListHymnsQuery,
@@ -64,6 +65,13 @@ export class HymnsController {
     const params = parseOrBadRequest(hymnalParamsSchema, context.params, "hymnal slug");
     const dump = await this.queryBus.execute<ExportHymnalQuery, HymnalExportDto>(new ExportHymnalQuery(params.slug));
     return cachedJsonResponse(dump, EXPORT_CACHE_SECONDS);
+  }
+
+  public async getRelated(context: HttpRouterContext): Promise<HttpResponseContext> {
+    const params = parseOrBadRequest(hymnParamsSchema, context.params, "hymn slug");
+    const options = parseOrBadRequest(relatedHymnsQuerySchema, context.query, "query");
+    const result = await this.queryBus.execute<GetRelatedHymnsQuery, RelatedHymnsDto>(new GetRelatedHymnsQuery(params.slug, options.limit));
+    return cachedJsonResponse(result, EXPORT_CACHE_SECONDS);
   }
 
   public async getHymnal(context: HttpRouterContext): Promise<HttpResponseContext> {
