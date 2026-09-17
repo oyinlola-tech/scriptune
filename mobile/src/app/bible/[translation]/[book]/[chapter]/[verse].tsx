@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import { ShareButton } from "@/components/common";
 import { AddToCollectionButton, NoteEditor, SaveButton } from "@/components/library";
+import { TranslationNotice } from "@/components/bible";
 import { Notice, Screen, Text } from "@/components/ui";
 import { bible, verseKey } from "@/lib/api";
 import { readLocalVerse } from "@/lib/offline";
@@ -41,6 +42,7 @@ export default function VerseScreen() {
               </Text>
             ))}
           </View>
+          <TranslationNotice translation={detail.data.translation} />
           <NoteEditor type="verse" targetKey={verseKey(detail.data.translation.code, detail.data.verse.book.slug, chapter, verse)} />
         </>
       )}

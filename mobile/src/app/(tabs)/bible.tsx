@@ -1,3 +1,4 @@
+import { bookLabel } from "@scriptune/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "expo-router";
@@ -47,7 +48,10 @@ export default function BibleScreen() {
             {books.data?.books.filter(group.match).map((book) => (
               <Link key={book.slug} href={{ pathname: "/bible/[translation]/[book]", params: { translation: translation.toLowerCase(), book: book.slug } }} asChild>
                 <Pressable style={({ pressed }) => ({ width: "48%", flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingVertical: 10, paddingHorizontal: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, opacity: pressed ? 0.8 : 1 })}>
-                  <Text variant="title" style={{ fontSize: 18 }}>{book.name}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="title" style={{ fontSize: 18 }} numberOfLines={1}>{bookLabel(book)}</Text>
+                    {book.localName !== null && <Text variant="muted" style={{ fontSize: 11 }} numberOfLines={1}>{book.name}</Text>}
+                  </View>
                   <Text variant="muted" style={{ fontSize: 12 }}>{book.chapterCount}</Text>
                 </Pressable>
               </Link>

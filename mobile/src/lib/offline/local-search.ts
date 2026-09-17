@@ -26,7 +26,7 @@ function coverage(tokens: string[], text: string): number {
   return hits / tokens.length;
 }
 
-interface VerseHitRow { translation: string; book_ord: number; chapter: number; verse: number; text: string; rank: number; name: string; slug: string; abbreviation: string }
+interface VerseHitRow { translation: string; book_ord: number; chapter: number; verse: number; text: string; rank: number; name: string; local_name: string | null; slug: string; abbreviation: string }
 interface HymnHitRow { slug: string; title: string; first_line: string; language: string; lyrics: string; rank: number }
 
 /** The translation local verse search reads, preferring KJV, then any downloaded Bible. */
@@ -41,7 +41,7 @@ async function verseHits(tokens: string[], limit: number, translation: string): 
   if (tokens.length === 0) return [];
   const db = await openDatabase();
   return db.getAllAsync<VerseHitRow>(
-    `SELECT f.translation, f.book_ord, f.chapter, f.verse, f.text, bm25(verses_fts) AS rank, b.name, b.slug, b.abbreviation
+    `SELECT f.translation, f.book_ord, f.chapter, f.verse, f.text, bm25(verses_fts) AS rank, b.name, b.local_name, b.slug, b.abbreviation
      FROM verses_fts f JOIN books b ON b.translation = f.translation AND b.ord = f.book_ord
      WHERE f.translation = ? AND verses_fts MATCH ? ORDER BY rank LIMIT ?`,
     translation, matchExpression(tokens), limit,
@@ -65,7 +65,7 @@ export async function searchLocal(query: string, limit = 10): Promise<SearchAllR
   const translation = await preferredTranslation();
   const [verses, hymns] = await Promise.all([translation === null ? Promise.resolve([]) : verseHits(tokens, limit, translation), hymnHits(tokens, limit)]);
   const verseResults: VerseSearchHitDto[] = verses.map((row) => ({
-    reference: `${row.name} ${row.chapter}:${row.verse}`, translation: row.translation, book: { slug: row.slug, name: row.name, abbreviation: row.abbreviation }, chapter: row.chapter, verse: row.verse, text: row.text, score: -row.rank,
+    reference: `${row.name} ${row.chapter}:${row.verse}`, translation: row.translation, book: { slug: row.slug, name: row.name, localName: row.local_name, abbreviation: row.abbreviation }, chapter: row.chapter, verse: row.verse, text: row.text, score: -row.rank,
   }));
   const hymnResults: HymnSearchHitDto[] = hymns.map((row) => ({ slug: row.slug, title: row.title, firstLine: row.first_line, language: row.language, score: -row.rank }));
   return { query, verses: translation === null ? null : { translation, results: verseResults }, hymns: { results: hymnResults } };

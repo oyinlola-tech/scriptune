@@ -1,3 +1,4 @@
+import { bookLabel } from "@scriptune/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Pressable, View } from "react-native";
@@ -19,13 +20,13 @@ export default function BookScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: book?.name ?? "Chapters" }} />
+      <Stack.Screen options={{ title: book ? bookLabel(book) : "Chapters" }} />
       {books.isPending && <Text variant="muted">Loading…</Text>}
       {(books.isError || (books.isSuccess && book === null)) && <Notice message="This book could not be found." />}
       {book && (
         <>
           <Text variant="eyebrow">{books.data?.translation.name}</Text>
-          <Text variant="display">{book.name}</Text>
+          <Text variant="display">{bookLabel(book)}</Text>
           <Text variant="muted">{book.chapterCount === 1 ? "One chapter." : `${book.chapterCount} chapters. Choose one to read.`}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }} accessibilityLabel="Chapters">
             {chapters.map((chapter) => (

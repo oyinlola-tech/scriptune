@@ -1,7 +1,9 @@
+import { bookLabel } from "@scriptune/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Link, Stack, router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react-native";
 import { Pressable, View } from "react-native";
+import { TranslationNotice, TranslationSwitcher } from "@/components/bible";
 import { Button, Notice, Screen, Text } from "@/components/ui";
 import { bible } from "@/lib/api";
 import { readLocalChapter } from "@/lib/offline";
@@ -17,13 +19,15 @@ export default function ChapterScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: book ? `${book.name} ${chapter}` : "Chapter" }} />
+      <Stack.Screen options={{ title: book ? `${bookLabel(book)} ${chapter}` : "Chapter" }} />
       {data.isPending && <Text variant="muted">Loading…</Text>}
       {data.isError && <Notice message="This chapter is not on the device and could not be fetched. Connect, or download the translation from More › Offline copies." action={{ label: "Try again", onPress: () => void data.refetch() }} />}
       {data.data && book && (
         <>
           <Text variant="eyebrow">{data.data.translation.name}</Text>
-          <Text variant="display">{book.name} {chapter}</Text>
+          <Text variant="display">{bookLabel(book)} {chapter}</Text>
+          {/* Only the 66 shared books are in every translation. */}
+          {!book.deuterocanonical && <TranslationSwitcher current={params.translation} onChoose={(code) => router.replace({ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: code, book: book.slug, chapter: String(chapter) } })} />}
           <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
             {data.data.verses.map((verse) => (
               <Link key={verse.verse} href={{ pathname: "/bible/[translation]/[book]/[chapter]/[verse]", params: { translation: params.translation, book: book.slug, chapter: String(chapter), verse: String(verse.verse) } }} asChild>
@@ -43,6 +47,7 @@ export default function ChapterScreen() {
               <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter + 1) } }} asChild replace><Button label={String(chapter + 1)} accessibilityLabel={`Chapter ${chapter + 1}`} icon={ChevronRight} variant="outline" /></Link>
             ) : <View />}
           </View>
+          <TranslationNotice translation={data.data.translation} />
         </>
       )}
     </Screen>

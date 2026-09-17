@@ -1,6 +1,10 @@
 // Web build: nothing is stored locally, so local search and recognition find nothing.
 import type { RecognitionResultDto, SearchAllResultDto } from "@scriptune/contracts";
 
+function fold(text: string): string {
+  return text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export function tokenize(text: string): string[] {
   const words = fold(text).replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).map((word) => word.replace(/^'+|'+$/g, "")).filter((word) => word.length >= 2);
   return [...new Set(words)];
