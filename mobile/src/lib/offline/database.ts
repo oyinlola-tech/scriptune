@@ -1,7 +1,7 @@
 import * as SQLite from "expo-sqlite";
 
 const DATABASE_NAME = "scriptune.db";
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 let opening: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -13,6 +13,8 @@ const SCHEMA = `
     title TEXT NOT NULL,
     item_count INTEGER NOT NULL,
     rights_status TEXT NOT NULL DEFAULT 'public-domain',
+    language TEXT NOT NULL DEFAULT 'en',
+    notice TEXT,
     generated_at TEXT NOT NULL,
     downloaded_at TEXT NOT NULL
   );
@@ -21,6 +23,7 @@ const SCHEMA = `
     ord INTEGER NOT NULL,
     slug TEXT NOT NULL,
     name TEXT NOT NULL,
+    local_name TEXT,
     abbreviation TEXT NOT NULL,
     testament TEXT NOT NULL,
     deuterocanonical INTEGER NOT NULL DEFAULT 0,
@@ -37,7 +40,7 @@ const SCHEMA = `
     PRIMARY KEY (translation, book_ord, chapter, verse)
   );
   CREATE VIRTUAL TABLE IF NOT EXISTS verses_fts USING fts5 (
-    translation UNINDEXED, book_ord UNINDEXED, chapter UNINDEXED, verse UNINDEXED, text, tokenize = 'porter unicode61'
+    translation UNINDEXED, book_ord UNINDEXED, chapter UNINDEXED, verse UNINDEXED, text, tokenize = 'porter unicode61 remove_diacritics 2'
   );
   CREATE TABLE IF NOT EXISTS hymns (
     hymnal TEXT NOT NULL,
@@ -52,7 +55,7 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS hymns_slug ON hymns (slug);
   CREATE VIRTUAL TABLE IF NOT EXISTS hymns_fts USING fts5 (
-    slug UNINDEXED, hymnal UNINDEXED, title, lyrics, tokenize = 'porter unicode61'
+    slug UNINDEXED, hymnal UNINDEXED, title, lyrics, tokenize = 'porter unicode61 remove_diacritics 2'
   );
 `;
 

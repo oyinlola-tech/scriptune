@@ -17,9 +17,9 @@ export async function downloadTranslation(code: string, onProgress: OnProgress =
     await tx.runAsync("DELETE FROM verses WHERE translation = ?", translation);
     await tx.runAsync("DELETE FROM verses_fts WHERE translation = ?", translation);
     await tx.runAsync("DELETE FROM books WHERE translation = ?", translation);
-    const bookInsert = await tx.prepareAsync("INSERT INTO books (translation, ord, slug, name, abbreviation, testament, deuterocanonical, chapter_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    const bookInsert = await tx.prepareAsync("INSERT INTO books (translation, ord, slug, name, local_name, abbreviation, testament, deuterocanonical, chapter_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     try {
-      for (const book of dump.books) await bookInsert.executeAsync(translation, book.order, book.slug, book.name, book.abbreviation, book.testament, book.deuterocanonical ? 1 : 0, book.chapterCount);
+      for (const book of dump.books) await bookInsert.executeAsync(translation, book.order, book.slug, book.name, book.localName ?? null, book.abbreviation, book.testament, book.deuterocanonical ? 1 : 0, book.chapterCount);
     } finally {
       await bookInsert.finalizeAsync();
     }
@@ -37,8 +37,8 @@ export async function downloadTranslation(code: string, onProgress: OnProgress =
       await ftsInsert.finalizeAsync();
     }
     await tx.runAsync(
-      "INSERT OR REPLACE INTO corpora (id, kind, title, item_count, rights_status, generated_at, downloaded_at) VALUES (?, 'bible', ?, ?, ?, ?, ?)",
-      translation, dump.translation.name, dump.verseCount, dump.translation.rightsStatus, dump.generatedAt, new Date().toISOString(),
+      "INSERT OR REPLACE INTO corpora (id, kind, title, item_count, rights_status, language, notice, generated_at, downloaded_at) VALUES (?, 'bible', ?, ?, ?, ?, ?, ?, ?)",
+      translation, dump.translation.name, dump.verseCount, dump.translation.rightsStatus, dump.translation.language ?? "en", dump.translation.notice ?? null, dump.generatedAt, new Date().toISOString(),
     );
   });
   onProgress({ phase: "done" });

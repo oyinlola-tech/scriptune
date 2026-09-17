@@ -2,7 +2,7 @@
 import type { RecognitionResultDto, SearchAllResultDto } from "@scriptune/contracts";
 
 export function tokenize(text: string): string[] {
-  const words = text.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).map((word) => word.replace(/^'+|'+$/g, "")).filter((word) => word.length >= 2);
+  const words = fold(text).replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).map((word) => word.replace(/^'+|'+$/g, "")).filter((word) => word.length >= 2);
   return [...new Set(words)];
 }
 

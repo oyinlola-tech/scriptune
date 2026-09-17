@@ -1,7 +1,7 @@
 import type {
   AuthSessionDto, BookDto, ChapterDto, CollectionDetailDto, CollectionDto, CollectionItemDto, HistoryEntryDto, HistoryEntryInput, HymnalDto,
   HymnalEntryDto, HymnDetailDto, HymnSummaryDto, LibraryTargetType, NoteDto, PageDto, RecognitionMode, RecognitionResultDto, SavedItemDto,
-  SearchAllResultDto, TranslationDto, UserDto, VerseDetailDto,
+  SearchAllResultDto, TranslationDto, TranslationSummaryDto, UserDto, VerseDetailDto,
 } from "@scriptune/contracts";
 import { api } from "./client";
 
@@ -18,7 +18,7 @@ const anonymous = { auth: false } as const;
 
 export const bible = {
   translations: () => api<{ translations: TranslationDto[] }>("/bible/translations", anonymous),
-  books: (translation: string) => api<{ translation: { code: string; name: string }; books: BookDto[] }>(`/bible/${translation}/books`, anonymous),
+  books: (translation: string) => api<{ translation: TranslationSummaryDto; books: BookDto[] }>(`/bible/${translation}/books`, anonymous),
   chapter: (translation: string, book: string, chapter: number) => api<ChapterDto>(`/bible/${translation}/${book}/${chapter}`, anonymous),
   verse: (translation: string, book: string, chapter: number, verse: number) => api<VerseDetailDto>(`/bible/${translation}/${book}/${chapter}/${verse}`, anonymous),
 };

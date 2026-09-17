@@ -3,9 +3,14 @@ import { openDatabase } from "./database";
 
 const MIN_CONFIDENCE = 10;
 
+/** Lowercase with accents and tone marks removed, so "Olorun" and "Ọlọ́run" are the same word. */
+function fold(text: string): string {
+  return text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 /** Lowercase words of two or more letters, deduplicated, ready for FTS. */
 export function tokenize(text: string): string[] {
-  const words = text.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).map((word) => word.replace(/^'+|'+$/g, "")).filter((word) => word.length >= 2);
+  const words = fold(text).replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).map((word) => word.replace(/^'+|'+$/g, "")).filter((word) => word.length >= 2);
   return [...new Set(words)];
 }
 
@@ -16,7 +21,7 @@ function matchExpression(tokens: string[]): string {
 /** Share of query words that appear in the candidate text. */
 function coverage(tokens: string[], text: string): number {
   if (tokens.length === 0) return 0;
-  const haystack = ` ${text.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, " ")} `;
+  const haystack = ` ${fold(text).replace(/[^\p{L}\p{N}\s']/gu, " ")} `;
   const hits = tokens.filter((token) => haystack.includes(` ${token} `) || haystack.includes(` ${token}`)).length;
   return hits / tokens.length;
 }

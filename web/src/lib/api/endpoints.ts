@@ -2,7 +2,7 @@ import { api } from "./client";
 import type {
   AuthSessionDto, BookDto, ChapterDto, CollectionDetailDto, CollectionDto, CollectionItemDto, HistoryEntryDto, HistoryEntryInput,
   HymnalDto, HymnalEntryDto, HymnDetailDto, HymnSearchHitDto, HymnSummaryDto, LibraryTargetType, NoteDto, PageDto,
-  RecognitionMode, RecognitionResultDto, SavedItemDto, SearchAllResultDto, TranslationDto, UserDto, VerseDetailDto, VerseSearchHitDto,
+  RecognitionMode, RecognitionResultDto, SavedItemDto, SearchAllResultDto, TranslationDto, TranslationSummaryDto, UserDto, VerseDetailDto, VerseSearchHitDto,
 } from "./types";
 
 const q = (params: Record<string, string | number | undefined>) => {
@@ -18,7 +18,7 @@ const publicCache = { auth: false, next: { revalidate: 3600 } } as const;
 
 export const bible = {
   translations: () => api<{ translations: TranslationDto[] }>("/bible/translations", publicCache),
-  books: (translation: string) => api<{ translation: { code: string; name: string }; books: BookDto[] }>(`/bible/${encodeURIComponent(translation)}/books`, publicCache),
+  books: (translation: string) => api<{ translation: TranslationSummaryDto; books: BookDto[] }>(`/bible/${encodeURIComponent(translation)}/books`, publicCache),
   chapter: (translation: string, book: string, chapter: number) => api<ChapterDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}`, publicCache),
   verse: (translation: string, book: string, chapter: number, verse: number, context = 2) =>
     api<VerseDetailDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}/${verse}${q({ context })}`, publicCache),
