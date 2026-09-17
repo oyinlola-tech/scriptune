@@ -97,3 +97,17 @@ export interface PageDto<T> {
   readonly total: number;
   readonly totalPages: number;
 }
+
+/** A hymn worth reading after another, with the reason the two are paired. */
+export interface RelatedHymnDto {
+  readonly slug: string;
+  readonly title: string;
+  readonly firstLine: string | null;
+  /** "Both draw on Psalm 23", or "Similar words". */
+  readonly reason: string;
+}
+
+export interface RelatedHymnsDto {
+  readonly slug: string;
+  readonly related: readonly RelatedHymnDto[];
+}

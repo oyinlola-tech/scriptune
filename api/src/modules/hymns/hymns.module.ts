@@ -13,9 +13,10 @@ import {
 import { createHymnRoutes } from "../../routes/index.js";
 import { HymnLookup } from "../../services/hymns/index.js";
 import { registerRoutes } from "../../utils/http/route.helper.js";
-import { IMPORT_HYMNAL, ImportHymnalHandler, LINK_SCRIPTURES, LinkScripturesHandler } from "./commands/index.js";
+import { IMPORT_HYMNAL, ImportHymnalHandler, LINK_SCRIPTURES, LinkScripturesHandler, RELATE_HYMNS, RelateHymnsHandler } from "./commands/index.js";
 import {
   GET_HYMN,
+  GET_RELATED_HYMNS,
   EXPORT_HYMNAL,
   ExportHymnalHandler,
   GET_HYMNAL,
@@ -24,6 +25,7 @@ import {
   GetHymnalEntryHandler,
   GetHymnalHandler,
   GetHymnHandler,
+  GetRelatedHymnsHandler,
   GetHymnSummariesHandler,
   LIST_HYMNALS,
   LIST_HYMNS,
@@ -77,7 +79,9 @@ export class HymnsModule extends BaseModule {
 
     commandBus.register(IMPORT_HYMNAL, new ImportHymnalHandler(sources, hymnals, hymnImports));
     commandBus.register(LINK_SCRIPTURES, new LinkScripturesHandler(links));
+    commandBus.register(RELATE_HYMNS, new RelateHymnsHandler(links));
     queryBus.register(GET_HYMN, new GetHymnHandler(lookup));
+    queryBus.register(GET_RELATED_HYMNS, new GetRelatedHymnsHandler(lookup, links));
     queryBus.register(GET_HYMN_SUMMARIES, new GetHymnSummariesHandler(hymns));
     queryBus.register(LIST_HYMNS, new ListHymnsHandler(hymns));
     queryBus.register(SEARCH_HYMNS, new SearchHymnsHandler(texts));

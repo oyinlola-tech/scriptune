@@ -25,6 +25,13 @@ export interface MatchedReferenceInput {
   readonly note: string;
 }
 
+/** What the related-hymns comparison needs to know about one hymn text. */
+export interface RelatableHymnRow { readonly hymnId: string; readonly language: string; readonly title: string; readonly normalizedLyrics: string; readonly chapters: readonly string[] }
+
+export interface HymnRelationInput { readonly hymnId: string; readonly relatedHymnId: string; readonly score: number; readonly reason: string }
+
+export interface RelatedHymnRow { readonly slug: string; readonly title: string; readonly firstLine: string | null; readonly reason: string }
+
 /** Topics and scripture references: the links between hymns and everything else. */
 export interface HymnLinkRepository {
   listTopics(): Promise<readonly TopicWithCount[]>;
@@ -34,6 +41,9 @@ export interface HymnLinkRepository {
   listHymnWords(language: string): Promise<readonly HymnWordsRow[]>;
   /** Replaces every matched link, leaving the ones hymnals state untouched. */
   replaceMatchedReferences(rows: readonly MatchedReferenceInput[]): Promise<number>;
+  listRelatableHymns(): Promise<readonly RelatableHymnRow[]>;
+  replaceRelations(rows: readonly HymnRelationInput[]): Promise<number>;
+  findRelatedHymns(hymnId: string, limit: number): Promise<readonly RelatedHymnRow[]>;
 }
 
 export class PrismaHymnLinkRepository implements HymnLinkRepository {
@@ -107,5 +117,34 @@ export class PrismaHymnLinkRepository implements HymnLinkRepository {
       }
     }, { timeout: 120_000 });
     return this.prisma.hymnScriptureReference.count({ where: { origin: "matched" } });
+  }
+
+  public async listRelatableHymns(): Promise<readonly RelatableHymnRow[]> {
+    return this.prisma.$queryRaw<RelatableHymnRow[]>`
+      SELECT t.hymn_id AS "hymnId", t.language, t.title, t.normalized_lyrics AS "normalizedLyrics",
+             COALESCE((SELECT array_agg(DISTINCT r.book_id || ':' || r.chapter) FROM hymn_scripture_references r WHERE r.hymn_id = t.hymn_id), ARRAY[]::text[]) AS chapters
+        FROM hymn_texts t`;
+  }
+
+  public async replaceRelations(rows: readonly HymnRelationInput[]): Promise<number> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`TRUNCATE hymn_relations`;
+      for (let start = 0; start < rows.length; start += 2000) {
+        const values = rows.slice(start, start + 2000).map((row) => Prisma.sql`(${row.hymnId}::uuid, ${row.relatedHymnId}::uuid, ${row.score}, ${row.reason})`);
+        await tx.$executeRaw`INSERT INTO hymn_relations (hymn_id, related_hymn_id, score, reason) VALUES ${Prisma.join(values)} ON CONFLICT DO NOTHING`;
+      }
+    }, { timeout: 120_000 });
+    return this.prisma.hymnRelation.count();
+  }
+
+  /** A short range scan on the primary key; the comparing was done when the job ran. */
+  public async findRelatedHymns(hymnId: string, limit: number): Promise<readonly RelatedHymnRow[]> {
+    const rows = await this.prisma.hymnRelation.findMany({
+      where: { hymnId },
+      orderBy: { score: "desc" },
+      take: limit,
+      select: { reason: true, relatedHymn: { select: { slug: true, canonicalTitle: true, texts: { select: { firstLine: true }, orderBy: { language: "asc" }, take: 1 } } } },
+    });
+    return rows.map((row) => ({ slug: row.relatedHymn.slug, title: row.relatedHymn.canonicalTitle, firstLine: row.relatedHymn.texts[0]?.firstLine ?? null, reason: row.reason }));
   }
 }

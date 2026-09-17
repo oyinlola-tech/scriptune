@@ -5,3 +5,4 @@
  */
 export * from "./importHymnal/index.js";
 export * from "./linkScriptures/index.js";
+export * from "./relateHymns/index.js";

@@ -6,6 +6,7 @@
 export * from "./exportHymnal/index.js";
 export * from "./getHymn/index.js";
 export * from "./getHymnal/index.js";
+export * from "./getRelatedHymns/index.js";
 export * from "./getHymnalEntry/index.js";
 export * from "./getHymnSummaries/index.js";
 export * from "./listHymnals/index.js";
