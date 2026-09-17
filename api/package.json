@@ -29,7 +29,10 @@
     "db:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
     "import:bible": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:bible",
+    "import:xrefs": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:xrefs",
     "import:hymns": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:hymns",
+    "link:scriptures": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts link:scriptures",
+    "link:hymns": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts link:hymns",
     "import:hymnal": "node --env-file-if-exists=.env --import tsx src/jobs/jobs.cli.ts import:hymnal"
   },
   "dependencies": {
