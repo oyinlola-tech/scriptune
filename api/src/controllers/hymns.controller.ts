@@ -29,6 +29,7 @@ import {
   hymnListQuerySchema,
   hymnParamsSchema,
   hymnSearchQuerySchema,
+  relatedHymnsQuerySchema,
 } from "../validators/hymns.validators.js";
 
 /** Translates hymn HTTP requests into queries. */

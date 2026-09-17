@@ -78,6 +78,23 @@ model TranslationBook {
   @@map("bible_translation_books")
 }
 
+/// A link from one verse to a related passage, the same for every translation.
+/// Imported from OpenBible.info (CC-BY); `votes` is how strongly readers agree with the link.
+model CrossReference {
+  fromBookId   Int @map("from_book_id")
+  fromChapter  Int @map("from_chapter")
+  fromVerse    Int @map("from_verse")
+  toBookId     Int @map("to_book_id")
+  toChapter    Int @map("to_chapter")
+  toVerseStart Int @map("to_verse_start")
+  /// Last verse of the passage when it is a range within one chapter, else the same as the start.
+  toVerseEnd   Int @map("to_verse_end")
+  votes        Int
+
+  @@id([fromBookId, fromChapter, fromVerse, toBookId, toChapter, toVerseStart])
+  @@map("bible_cross_references")
+}
+
 /// One verse of one translation. `search_vector` is a generated tsvector column over the accent-folded text.
 model Verse {
   id             Int                      @id @default(autoincrement())
@@ -148,8 +165,26 @@ model Hymn {
   hymnalEntries       HymnalEntry[]
   topics              HymnTopic[]
   scriptureReferences HymnScriptureReference[]
+  related             HymnRelation[]           @relation("relatedFrom")
+  relatedTo           HymnRelation[]           @relation("relatedTo")
 
   @@map("hymns")
+}
+
+/// A hymn worth reading after another, worked out ahead of time by comparing their words
+/// so that a request only has to read a few rows.
+model HymnRelation {
+  hymnId        String @map("hymn_id") @db.Uuid
+  relatedHymnId String @map("related_hymn_id") @db.Uuid
+  /// 0 to 1; how alike the two are.
+  score         Float
+  /// Why they are paired, in words a reader can be shown.
+  reason        String
+  hymn          Hymn   @relation("relatedFrom", fields: [hymnId], references: [id], onDelete: Cascade)
+  relatedHymn   Hymn   @relation("relatedTo", fields: [relatedHymnId], references: [id], onDelete: Cascade)
+
+  @@id([hymnId, relatedHymnId])
+  @@map("hymn_relations")
 }
 
 /// The words of a hymn in one language and variant. `search_vector` is generated from title and lyrics.
@@ -269,6 +304,8 @@ model HymnScriptureReference {
   verseStart Int?    @map("verse_start")
   verseEnd   Int?    @map("verse_end")
   note       String?
+  /// "editorial" for links a hymnal file states, "matched" for those found by comparing the words.
+  origin     String  @default("editorial")
   hymn       Hymn    @relation(fields: [hymnId], references: [id], onDelete: Cascade)
   book       Book    @relation(fields: [bookId], references: [id])
 
