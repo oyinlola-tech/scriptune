@@ -10,4 +10,6 @@ export interface BookModel {
   readonly deuterocanonical: boolean;
   /** Chapters in this translation when read for one, otherwise the most any translation has. */
   readonly chapterCount: number;
+  /** The name in a translation's own language, present only when read for such a translation. */
+  readonly localName?: string | null;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TranslationNotice } from "@/components/bible/translation-notice";
 import { VerseBlock } from "@/components/bible/verse-block";
 import { Page } from "@/components/layout/page";
 import { ShareButton } from "@/components/common/share-button";
@@ -49,11 +50,12 @@ export default async function VersePage({ params }: { params: Params }) {
           <Link href={`/bible/${code.toLowerCase()}/${detail.verse.book.slug}/${detail.verse.chapter}#v${detail.verse.verse}`} className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-sm hover:bg-secondary">Read the chapter</Link>
         </div>
       </header>
-      <div className="space-y-4">
+      <div className="space-y-4" lang={detail.translation.language}>
         {detail.context.before.map((verse) => <VerseBlock key={verse.verse} verse={verse} translation={code} />)}
         <VerseBlock verse={detail.verse} translation={code} highlighted linked={false} />
         {detail.context.after.map((verse) => <VerseBlock key={verse.verse} verse={verse} translation={code} />)}
       </div>
+      <TranslationNotice translation={detail.translation} />
       <NoteEditor type="verse" targetKey={verseKey(code, detail.verse.book.slug, detail.verse.chapter, detail.verse.verse)} />
       <section className="mt-12 border-t border-border pt-6">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Hymns on this passage</h2>

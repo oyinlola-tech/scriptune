@@ -36,7 +36,7 @@ export class PrismaHymnTextRepository implements HymnTextRepository {
     };
     // Same staging as verses: exact words, then any word, then trigram only for
     // a real phrase that still has no answer (the expensive path).
-    await take(Prisma.sql`t.search_vector @@ websearch_to_tsquery('english', ${input.text})`);
+    await take(Prisma.sql`t.search_vector @@ websearch_to_tsquery('english', scriptune_fold(${input.text}))`);
     const anyPair = toAnyPairQuery(input.normalizedText);
     if (found.length === 0 && anyPair !== null) {
       await take(Prisma.sql`t.search_vector @@ to_tsquery('english', ${anyPair})`);
@@ -53,7 +53,7 @@ export class PrismaHymnTextRepository implements HymnTextRepository {
     // A hymn with English and Yoruba words is one hymn: keep its best text.
     return this.prisma.$queryRaw<HymnSearchHit[]>(Prisma.sql`
       WITH query AS (
-        SELECT websearch_to_tsquery('english', ${input.text}) AS ts, ${input.normalizedText}::text AS norm
+        SELECT websearch_to_tsquery('english', scriptune_fold(${input.text})) AS ts, ${input.normalizedText}::text AS norm
       ),
       matches AS (
         SELECT DISTINCT ON (t.hymn_id)

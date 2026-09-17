@@ -33,7 +33,12 @@ export async function runImportBibleJob(options: ImportBibleJobOptions = {}): Pr
   try {
     for (const source of sources) {
       logger.info("Loading dataset", { translation: source.code, file: options.file, url: options.url ?? source.url });
-      const { books, skipped } = await loadBibleSource(source, options.all === true ? {} : options);
+      const loaded = await loadBibleSource(source, options.all === true ? {} : options);
+      const { skipped } = loaded;
+      const books = loaded.books.map((book) => {
+        const localName = source.bookNames?.[book.order - 1];
+        return localName === undefined ? book : { ...book, localName };
+      });
       if (skipped.length > 0) logger.info("Skipped books outside the canon", { translation: source.code, skipped: skipped.join(", ") });
       logger.info("Importing verses", { translation: source.code, books: books.length });
       const result = await commandBus.execute<ImportTranslationCommand, ImportTranslationResult>(new ImportTranslationCommand({ translation: source.translation, books }));

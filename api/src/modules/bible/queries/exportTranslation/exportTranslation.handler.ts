@@ -1,5 +1,5 @@
 import { QueryHandler } from "@zudojs/cqrs";
-import type { BibleExportDto, BibleExportVerseRow } from "../../../../dtos/index.js";
+import { toTranslationSummary, type BibleExportDto, type BibleExportVerseRow } from "../../../../dtos/index.js";
 import type { BookRepository, VerseRepository } from "../../../../repositories/index.js";
 import type { BibleLookup } from "../../../../services/bible/index.js";
 import { EXPORT_TRANSLATION, type ExportTranslationQuery } from "./exportTranslation.query.js";
@@ -24,10 +24,10 @@ export class ExportTranslationHandler extends QueryHandler<ExportTranslationQuer
     const rows = await this.verses.findAllForTranslation(translation.id);
     const verses: BibleExportVerseRow[] = rows.map((row) => [row.bookId, row.chapter, row.verse, row.text]);
     return {
-      translation: { code: translation.code, name: translation.name, language: translation.language, rightsStatus: translation.rightsStatus },
+      translation: toTranslationSummary(translation),
       generatedAt: new Date().toISOString(),
       verseCount: verses.length,
-      books: books.map((book) => ({ order: book.id, slug: book.slug, name: book.name, abbreviation: book.abbreviation, testament: book.testament, deuterocanonical: book.deuterocanonical, chapterCount: book.chapterCount })),
+      books: books.map((book) => ({ order: book.id, slug: book.slug, name: book.name, localName: book.localName ?? null, abbreviation: book.abbreviation, testament: book.testament, deuterocanonical: book.deuterocanonical, chapterCount: book.chapterCount })),
       verses,
     };
   }

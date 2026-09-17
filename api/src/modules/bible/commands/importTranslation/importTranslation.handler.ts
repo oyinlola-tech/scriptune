@@ -84,7 +84,7 @@ export class ImportTranslationHandler extends CommandHandler<ImportTranslationCo
     const translation = await this.translations.upsert(translationInput);
     const known = new Map((await this.books.findAll()).map((book) => [book.id, book.chapterCount]));
     await this.books.upsertMany(books.map((book) => toBookUpsert(book, known.get(book.order) ?? 0)));
-    await this.books.replaceTranslationBooks(translation.id, books.map((book) => ({ bookId: book.order, chapterCount: book.chapters.length, verseCount: countVerses(book) })));
+    await this.books.replaceTranslationBooks(translation.id, books.map((book) => ({ bookId: book.order, chapterCount: book.chapters.length, verseCount: countVerses(book), localName: book.localName ?? null })));
     const verseCount = await this.verses.replaceForTranslation(translation.id, toVerseRows(books));
     await this.translations.setVerseCount(translation.id, verseCount);
 

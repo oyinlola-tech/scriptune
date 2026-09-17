@@ -136,7 +136,7 @@ export class PrismaVerseRepository implements VerseRepository {
       found.push(...rows);
     };
     // 1. Every word present: one GIN lookup, a few milliseconds.
-    await take(Prisma.sql`v.search_vector @@ websearch_to_tsquery('english', ${input.text})`);
+    await take(Prisma.sql`v.search_vector @@ websearch_to_tsquery('english', scriptune_fold(${input.text}))`);
     // 2. Nothing exact: any two of the stronger words together, still an index
     //    lookup, forgives a misheard word without matching every verse that says "my".
     const anyPair = toAnyPairQuery(input.normalizedText);
@@ -159,7 +159,7 @@ export class PrismaVerseRepository implements VerseRepository {
     const tieBreak = onePerVerse ? Prisma.sql`ORDER BY v.book_id, v.chapter, v.verse, score DESC, t.is_default DESC` : Prisma.empty;
     return this.prisma.$queryRaw<VerseSearchHit[]>(Prisma.sql`
       WITH query AS (
-        SELECT websearch_to_tsquery('english', ${input.text}) AS ts, ${input.normalizedText}::text AS norm
+        SELECT websearch_to_tsquery('english', scriptune_fold(${input.text})) AS ts, ${input.normalizedText}::text AS norm
       ),
       matches AS (
         SELECT ${distinct}

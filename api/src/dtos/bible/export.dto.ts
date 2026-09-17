@@ -1,10 +1,12 @@
 import type { TestamentName } from "../../constants/bible.books.js";
+import type { TranslationSummaryDto } from "./bible.dto.js";
 
 /** A book in a corpus export; verses point at it by `order`. */
 export interface BibleExportBookDto {
   readonly order: number;
   readonly slug: string;
   readonly name: string;
+  readonly localName: string | null;
   readonly abbreviation: string;
   readonly testament: TestamentName;
   readonly deuterocanonical: boolean;
@@ -19,7 +21,7 @@ export type BibleExportVerseRow = readonly [number, number, number, string];
  * search it offline.
  */
 export interface BibleExportDto {
-  readonly translation: { readonly code: string; readonly name: string; readonly language: string; readonly rightsStatus: string };
+  readonly translation: TranslationSummaryDto;
   readonly generatedAt: string;
   readonly verseCount: number;
   readonly books: readonly BibleExportBookDto[];

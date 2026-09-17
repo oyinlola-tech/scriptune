@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { bookLabel } from "@scriptune/contracts";
 import { Page } from "@/components/layout/page";
 import { ApiError, bible } from "@/lib/api";
 
@@ -22,7 +23,7 @@ async function load(params: Params) {
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const data = await load(params);
   if (data === null) notFound();
-  return { title: `${data.book.name} (${data.translation.code})`, description: `Choose a chapter of ${data.book.name}.` };
+  return { title: `${bookLabel(data.book)} (${data.translation.code})`, description: `Choose a chapter of ${data.book.name}.` };
 }
 
 /** The chapters of one book, laid out like the numbers on a hymn board. */
@@ -35,7 +36,7 @@ export default async function BookPage({ params }: { params: Params }) {
     <Page width="narrow">
       <header className="mb-8">
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-gold">{data.translation.name}</p>
-        <h1 className="display-serif mt-2 text-4xl sm:text-5xl">{data.book.name}</h1>
+        <h1 className="display-serif mt-2 text-4xl sm:text-5xl" lang={data.translation.language}>{bookLabel(data.book)}</h1>
         <p className="mt-2 text-muted-foreground">{data.book.chapterCount === 1 ? "One chapter." : `${data.book.chapterCount} chapters. Choose one to read.`}</p>
       </header>
       <ol className="grid grid-cols-5 gap-2 sm:grid-cols-8" aria-label="Chapters">
@@ -47,7 +48,7 @@ export default async function BookPage({ params }: { params: Params }) {
           </li>
         ))}
       </ol>
-      <p className="mt-10 text-sm"><Link href="/bible" className="underline-offset-4 hover:underline">← All books</Link></p>
+      <p className="mt-10 text-sm"><Link href={`/bible/${code}`} className="underline-offset-4 hover:underline">← All books</Link></p>
     </Page>
   );
 }

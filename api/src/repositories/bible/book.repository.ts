@@ -17,6 +17,7 @@ export interface TranslationBookInput {
   readonly bookId: number;
   readonly chapterCount: number;
   readonly verseCount: number;
+  readonly localName: string | null;
 }
 
 export interface BookRepository {
@@ -47,12 +48,12 @@ export class PrismaBookRepository implements BookRepository {
 
   public async findForTranslation(translationId: string): Promise<readonly BookModel[]> {
     const rows = await this.prisma.translationBook.findMany({ where: { translationId }, orderBy: { bookId: "asc" }, include: { book: true } });
-    return rows.map((row) => ({ ...row.book, chapterCount: row.chapterCount }));
+    return rows.map((row) => ({ ...row.book, chapterCount: row.chapterCount, localName: row.localName }));
   }
 
   public async findInTranslation(translationId: string, bookId: number): Promise<BookModel | null> {
     const row = await this.prisma.translationBook.findUnique({ where: { translationId_bookId: { translationId, bookId } }, include: { book: true } });
-    return row === null ? null : { ...row.book, chapterCount: row.chapterCount };
+    return row === null ? null : { ...row.book, chapterCount: row.chapterCount, localName: row.localName };
   }
 
   public async replaceTranslationBooks(translationId: string, books: readonly TranslationBookInput[]): Promise<void> {
@@ -60,9 +61,9 @@ export class PrismaBookRepository implements BookRepository {
     await this.prisma.$transaction(async (tx) => {
       await tx.translationBook.deleteMany({ where: { translationId, bookId: { notIn: books.map((book) => book.bookId) } } });
       if (books.length === 0) return;
-      const rows = books.map((book) => Prisma.sql`(${translationId}::uuid, ${book.bookId}, ${book.chapterCount}, ${book.verseCount})`);
-      await tx.$executeRaw`INSERT INTO bible_translation_books (translation_id, book_id, chapter_count, verse_count) VALUES ${Prisma.join(rows)}
-        ON CONFLICT (translation_id, book_id) DO UPDATE SET chapter_count = EXCLUDED.chapter_count, verse_count = EXCLUDED.verse_count`;
+      const rows = books.map((book) => Prisma.sql`(${translationId}::uuid, ${book.bookId}, ${book.chapterCount}, ${book.verseCount}, ${book.localName})`);
+      await tx.$executeRaw`INSERT INTO bible_translation_books (translation_id, book_id, chapter_count, verse_count, local_name) VALUES ${Prisma.join(rows)}
+        ON CONFLICT (translation_id, book_id) DO UPDATE SET chapter_count = EXCLUDED.chapter_count, verse_count = EXCLUDED.verse_count, local_name = EXCLUDED.local_name`;
     });
   }
 

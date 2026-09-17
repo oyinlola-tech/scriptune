@@ -14,9 +14,21 @@ export interface TranslationDto {
   verseCount: number;
 }
 
+/** What a reading view needs to label a translation and honour its licence. */
+export interface TranslationSummaryDto {
+  code: string;
+  name: string;
+  language: string;
+  rightsStatus: string;
+  /** The copyright notice an open licence requires beside the text; null for public-domain texts. */
+  notice: string | null;
+}
+
 export interface BookDto {
   slug: string;
   name: string;
+  /** The name in the translation's own language ("Saamu"), or null where the English name serves. */
+  localName: string | null;
   abbreviation: string;
   testament: "OLD" | "NEW";
   /** True for the seven books Catholic editions include and Protestant ones omit. */
@@ -27,21 +39,21 @@ export interface BookDto {
 
 export interface VerseDto {
   reference: string;
-  book: { slug: string; name: string; abbreviation: string };
+  book: { slug: string; name: string; localName: string | null; abbreviation: string };
   chapter: number;
   verse: number;
   text: string;
 }
 
 export interface ChapterDto {
-  translation: { code: string; name: string };
+  translation: TranslationSummaryDto;
   book: BookDto;
   chapter: number;
   verses: VerseDto[];
 }
 
 export interface VerseDetailDto {
-  translation: { code: string; name: string };
+  translation: TranslationSummaryDto;
   verse: VerseDto;
   context: { before: VerseDto[]; after: VerseDto[] };
 }
@@ -262,6 +274,7 @@ export interface BibleExportBookDto {
   order: number;
   slug: string;
   name: string;
+  localName: string | null;
   abbreviation: string;
   testament: "OLD" | "NEW";
   deuterocanonical: boolean;
@@ -273,7 +286,7 @@ export type BibleExportVerseRow = [number, number, number, string];
 
 /** A whole translation, for offline reading and search on the device. */
 export interface BibleExportDto {
-  translation: { code: string; name: string; language: string; rightsStatus: string };
+  translation: TranslationSummaryDto;
   generatedAt: string;
   verseCount: number;
   books: BibleExportBookDto[];

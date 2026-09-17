@@ -5,7 +5,7 @@
  */
 
 import { LEGAL_CONTACT } from "./contact";
-import { CREDITS, TAKEDOWN_POLICY, type Credit } from "./credits";
+import { CREDITS, rightsLabel, TAKEDOWN_POLICY, type Credit } from "./credits";
 
 export { LEGAL_CONTACT };
 
@@ -80,10 +80,10 @@ const privacy: LegalDocument = {
   slug: "privacy",
   title: "Privacy Policy",
   summary: "What Scriptune collects, why, where it goes, and the choices you have.",
-  updatedAt: "2026-09-13",
+  updatedAt: "2026-09-17",
   sections: [
     { heading: "The short version", paragraphs: [
-      "Scriptune listens only when you tap the listening button. Audio is sent to our server and on to a speech-to-text provider to be turned into words, and the audio itself is not kept. We store the words and the matches so you can see your history. We do not run advertising or sell personal data.",
+      "Scriptune listens only when you tap the listening button. Audio is sent to our server, turned into words there by speech recognition that we run ourselves, and then discarded. With offline listening switched on in the app, the audio never leaves your phone. We store the words and the matches so you can see your history. We do not run advertising or sell personal data.",
     ] },
     { heading: "What we collect", paragraphs: ["Depending on how you use Scriptune:"], bullets: [
       "Audio you record for identification: up to fifteen seconds at a time, processed and then discarded. The transcript and the matched results are kept as a recognition attempt.",
@@ -103,7 +103,7 @@ const privacy: LegalDocument = {
       "To fix problems and improve how well matching works. We look at transcripts and results in aggregate for this.",
     ] },
     { heading: "Who else processes data", paragraphs: ["We use a small number of providers to run the service:"], bullets: [
-      "Deepgram, which converts recorded audio to text on our behalf. Audio is sent from our server, and Deepgram processes it under its own terms.",
+      "No outside company receives your recordings. Speech recognition runs on our own server using the open-source Whisper model, or on your phone when offline listening is switched on.",
       "Google, if you choose to sign in with Google.",
       "Hosting providers for the API, database and website. Data may be stored or processed outside your country, including in the United States.",
     ] },
@@ -127,7 +127,7 @@ const licenses: LegalDocument = {
   slug: "licenses",
   title: "Licences and attribution",
   summary: "Where the words come from, and the open-source work Scriptune is built on.",
-  updatedAt: "2026-09-13",
+  updatedAt: "2026-09-17",
   sections: [
     { heading: "Scripture", paragraphs: ["Every translation in Scriptune is in the public domain:"], bullets: [
       "King James Version (1769 text): public domain in most of the world; in the United Kingdom it remains under Crown letters patent. American King James Version (1999, Michael Peter Engelbrite): released to the public domain. Both come from the scrollmapper/bible_databases project on GitHub.",
@@ -139,7 +139,7 @@ const licenses: LegalDocument = {
       "The words of Sacred Songs and Solos (Ira D. Sankey, 1200-piece edition) are in the public domain. The digitised text used by Scriptune is derived from the techoveride/Sacred_Songs_and_Solos repository on GitHub, whose code is released under the MIT licence. Two modern anthems appended to some editions are not included because their words remain in copyright.",
       "Each hymn page states the rights status of its text. Tell us if you believe a text is wrongly marked as public domain.",
     ] },
-    { heading: "Speech recognition", paragraphs: ["Speech-to-text is provided by Deepgram."] },
+    { heading: "Speech recognition", paragraphs: ["Speech-to-text uses OpenAI Whisper, an open-source model released under the MIT licence, run on Scriptune's own server and, for offline listening, on your device."] },
     { heading: "Typefaces", paragraphs: ["DM Serif Display and Geist are used under the SIL Open Font License."] },
     { heading: "Open source", paragraphs: [
       "Scriptune is built with Zudojs, Next.js, React, Expo, React Native, Prisma, PostgreSQL, SQLite, Tailwind CSS and TanStack Query, among other open-source projects. Their licences are included in the source distributions of each package.",
@@ -148,7 +148,7 @@ const licenses: LegalDocument = {
 };
 
 function creditLine(credit: Credit): string {
-  const rights = credit.status === "public-domain" ? "Public domain" : "Used by permission";
+  const rights = rightsLabel(credit.status);
   return `${credit.work} — ${credit.holder}. ${rights}. ${credit.detail}`;
 }
 
@@ -156,7 +156,7 @@ const copyright: LegalDocument = {
   slug: "copyright",
   title: "Copyright and credits",
   summary: "Where every text comes from, who holds the rights, and how to ask us to stop using it.",
-  updatedAt: "2026-09-13",
+  updatedAt: "2026-09-17",
   sections: [
     { heading: "How we use these texts", paragraphs: [
       "Scriptune shows scripture and hymn texts so people can find and read them. Some are public domain; others are used with the permission of the organisations that hold their rights. Those organisations keep every right to their work.",

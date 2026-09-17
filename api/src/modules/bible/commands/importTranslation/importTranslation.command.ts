@@ -7,6 +7,8 @@ export const IMPORT_TRANSLATION = "bible.importTranslation" as const;
 export interface ImportBookInput {
   /** Canonical order, 1 to 66. */
   readonly order: number;
+  /** The book's name in the translation's language, when that is not English. */
+  readonly localName?: string;
   readonly chapters: readonly (readonly string[])[];
 }
 

@@ -5,7 +5,7 @@ The Expo app for Scriptune: identify a hymn or verse by listening, then read the
 ## Stack
 
 - Expo SDK 57, Expo Router (file routes under `src/app`), React Native 0.86, TypeScript.
-- `expo-audio` records a clip of up to fifteen seconds and posts it to `/recognize/audio`. The Deepgram key never leaves the API.
+- `expo-audio` records a clip of up to fifteen seconds and posts it to `/recognize/audio`. The API passes it to the self-hosted Whisper transcriber; with offline listening downloaded, the clip is transcribed on the device instead.
 - `expo-secure-store` keeps the refresh token in the device keychain. The access token stays in memory. Same split as the web app.
 - TanStack Query for server state, Zustand for the session.
 - Palette and type mirror the web app: ivory ground, ink text, muted gold accent, DM Serif Display for scripture and hymn moments. Icons are Lucide (`lucide-react-native` on `react-native-svg`), the same set as the web.

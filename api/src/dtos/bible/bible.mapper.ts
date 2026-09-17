@@ -3,6 +3,7 @@ import type {
   BookDto,
   BookSummaryDto,
   TranslationDto,
+  TranslationSummaryDto,
   VerseDto,
   VerseSearchHitDto,
 } from "./bible.dto.js";
@@ -19,14 +20,21 @@ export function toTranslationDto(model: TranslationModel): TranslationDto {
   };
 }
 
-export function toTranslationSummary(model: TranslationModel): Pick<TranslationDto, "code" | "name"> {
-  return { code: model.code, name: model.name };
+export function toTranslationSummary(model: TranslationModel): TranslationSummaryDto {
+  return {
+    code: model.code,
+    name: model.name,
+    language: model.language,
+    rightsStatus: model.rightsStatus,
+    notice: model.rightsStatus === "public-domain" ? null : model.description,
+  };
 }
 
 export function toBookDto(model: BookModel): BookDto {
   return {
     slug: model.slug,
     name: model.name,
+    localName: model.localName ?? null,
     abbreviation: model.abbreviation,
     testament: model.testament,
     deuterocanonical: model.deuterocanonical,
@@ -36,7 +44,7 @@ export function toBookDto(model: BookModel): BookDto {
 }
 
 export function toBookSummary(model: BookModel): BookSummaryDto {
-  return { slug: model.slug, name: model.name, abbreviation: model.abbreviation };
+  return { slug: model.slug, name: model.name, localName: model.localName ?? null, abbreviation: model.abbreviation };
 }
 
 export function formatReference(book: BookModel, chapter: number, verse?: number): string {
