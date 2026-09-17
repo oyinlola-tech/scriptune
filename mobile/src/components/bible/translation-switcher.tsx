@@ -13,7 +13,7 @@ export function TranslationSwitcher({ current, onChoose }: { current: string; on
   const choices = translations.data?.translations ?? [];
   if (choices.length < 2) return null;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, paddingVertical: 2 }} accessibilityRole="tablist" accessibilityLabel="Translations">
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: spacing.xs, paddingVertical: 2, alignItems: "center" }} accessibilityRole="tablist" accessibilityLabel="Translations">
       {choices.map((choice) => {
         const active = choice.code.toUpperCase() === current.toUpperCase();
         return (

@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Keyboard, Pressable, TextInput, View } from "react-native";
+import { AppState, Keyboard, Pressable, type ScrollView, TextInput, View } from "react-native";
 import { verseForDate, type RecognitionResultDto } from "@scriptune/contracts";
 import { CandidateCard, ListenButton } from "@/components/identify";
 import { Button, Notice, Screen, Text } from "@/components/ui";
@@ -20,6 +20,9 @@ import { fonts, radius, spacing, useColors } from "@/theme";
 export default function IdentifyScreen() {
   const colors = useColors();
   const [result, setResult] = useState<RecognitionResultDto | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  // The attempt whose results were last brought into view, so a later re-layout does not yank the page back.
+  const shownAttempt = useRef<string | null>(null);
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -104,7 +107,7 @@ export default function IdentifyScreen() {
   }, [autoListen]);
 
   return (
-    <Screen>
+    <Screen scrollRef={scrollRef}>
       <View style={{ alignItems: "center", gap: spacing.sm, marginTop: spacing.lg }}>
         <Text variant="eyebrow">Scriptune</Text>
         <Text variant="display" style={{ textAlign: "center" }}>What are you looking for?</Text>
@@ -143,14 +146,42 @@ export default function IdentifyScreen() {
       {result === null && <VerseOfDay />}
       {error && <Notice message={error} action={{ label: "Dismiss", onPress: () => setError(null) }} />}
       {result && (
-        <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
-          <Text variant="eyebrow">{result.candidates.length === 0 ? "No match" : result.attemptId.startsWith("local-") ? "Best matches, from this device" : "Best matches"}</Text>
-          {result.transcript !== "" && <Text variant="muted">Heard: “{result.transcript}”</Text>}
-          {result.candidates.length === 0 && <Text variant="muted">Nothing close enough. Try a longer clip, or type a few exact words.</Text>}
-          {result.candidates.map((candidate, index) => <CandidateCard key={`${candidate.type}-${index}`} candidate={candidate} rank={index} />)}
+        <View
+          style={{ marginTop: spacing.md }}
+          onLayout={(event) => {
+            // Results arrive below the fold; bring them up once, as they land.
+            if (shownAttempt.current === result.attemptId) return;
+            shownAttempt.current = result.attemptId;
+            scrollRef.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - spacing.md), animated: true });
+          }}
+        >
+          <Results key={result.attemptId} result={result} onClear={() => { setResult(null); setTyped(""); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} />
         </View>
       )}
     </Screen>
+  );
+}
+
+/** A strong match makes the long shots noise; this is how weak a match may be and still sit beside one. */
+const BESIDE_A_STRONG_MATCH = 50;
+
+/** The matches, best first. With a strong match on top, the long shots wait behind a tap. */
+function Results({ result, onClear }: { result: RecognitionResultDto; onClear: () => void }) {
+  const [showAll, setShowAll] = useState(false);
+  const strong = (result.candidates[0]?.confidence ?? 0) >= 80;
+  const shown = strong && !showAll ? result.candidates.filter((candidate, index) => index === 0 || candidate.confidence >= BESIDE_A_STRONG_MATCH) : result.candidates;
+  const hidden = result.candidates.length - shown.length;
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Text variant="eyebrow">{result.candidates.length === 0 ? "No match" : result.attemptId.startsWith("local-") ? "Best matches, from this device" : strong ? "Found it" : "Best matches"}</Text>
+        <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel="Clear the results" hitSlop={10}><Text variant="muted" style={{ fontSize: 13, textDecorationLine: "underline" }}>Clear</Text></Pressable>
+      </View>
+      {result.transcript !== "" && <Text variant="muted">Heard: “{result.transcript}”</Text>}
+      {result.candidates.length === 0 && <Text variant="muted">Nothing close enough. Try a longer clip, or type a few exact words.</Text>}
+      {shown.map((candidate, index) => <CandidateCard key={`${candidate.type}-${index}`} candidate={candidate} rank={index} />)}
+      {hidden > 0 && <Button label={`Show ${hidden} other ${hidden === 1 ? "possibility" : "possibilities"}`} variant="ghost" onPress={() => setShowAll(true)} />}
+    </View>
   );
 }
 
