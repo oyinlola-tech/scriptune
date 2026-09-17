@@ -28,8 +28,8 @@ hymnal, or the verse in context, with everything connected to it.
 
 It runs as a website, an iPhone app and an Android app over one API. Speech recognition is
 [OpenAI Whisper](https://github.com/openai/whisper) running on your own server, and on the phone
-itself when there is no signal. No third-party speech service is involved. Recordings are discarded once they are transcribed; only
-the words and the matches are kept, as your history.
+itself when there is no signal. No third-party speech service is involved. Recordings are
+discarded once they are transcribed; only the words and the matches are kept, as your history.
 
 ## 🎧 How it works
 
@@ -117,7 +117,7 @@ do fuzzy work it does not need.
   </tr>
 </table>
 
-<sub>Every picture is a capture of the running apps, produced by <a href="scripts/readme-images.mjs"><code>scripts/readme-images.mjs</code></a>. The phone screens come from the app's web build, so offline listening shows as unavailable there; it is part of the native apps.</sub>
+<sub>Every picture is a capture of the running apps. The phone screens come from the app's web build, so offline listening shows as unavailable there; it is part of the native apps.</sub>
 
 ## 🏗 Architecture
 
@@ -165,7 +165,7 @@ scriptune/
 ├── transcriber/   Python service that turns audio into words with Whisper
 ├── packages/      @scriptune/contracts: DTO types, keys and the API client both clients share
 ├── docker/        Dockerfiles and the compose stack (Postgres, Redis, optional API + transcriber)
-├── scripts/       one-command launcher, API tunnel, hymnal parsers, screenshot generators
+├── scripts/       one-command launcher, API tunnel, hymnal parsers
 └── docs/          architecture notes and the images on this page
 ```
 
@@ -280,8 +280,7 @@ field, and set `TRUST_PROXY=1` in `api/.env` so rate limits see the real client 
 ### Store listings
 
 App Store and Play Store screenshots at the exact required sizes, the Play feature graphic and
-the rules they keep to are in [mobile/store-assets/](mobile/store-assets/). Regenerate them with
-`node scripts/store-screenshots.mjs`.
+the rules they keep to are in [mobile/store-assets/](mobile/store-assets/).
 
 ## 📚 Texts and hymnals
 
