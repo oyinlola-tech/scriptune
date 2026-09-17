@@ -4,4 +4,6 @@
  * @module jobs
  */
 export * from "./importBible/index.js";
+export * from "./importCrossReferences/index.js";
 export * from "./importHymns/index.js";
+export * from "./linkScriptures/index.js";

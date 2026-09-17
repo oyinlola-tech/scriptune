@@ -65,11 +65,16 @@ export default async function HymnPage({ params }: { params: Promise<{ slug: str
         </header>
         {hymn.texts.length > 0 ? <HymnTextView texts={hymn.texts} /> : <p className="text-muted-foreground">No text is available for this hymn yet.</p>}
         {hymn.scriptureReferences.length > 0 && (
-          <section className="mt-12 border-t border-border pt-6">
-            <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Scripture</h2>
-            <ul className="flex flex-wrap gap-2">
+          <section className="mt-12 border-t border-border pt-6" aria-labelledby="hymn-scripture">
+            <h2 id="hymn-scripture" className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Scripture in this hymn</h2>
+            <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card">
               {hymn.scriptureReferences.map((reference) => (
-                <li key={reference.reference}><Link href={`/bible/kjv/${reference.book}/${reference.chapter}${reference.verseStart ? `/${reference.verseStart}` : ""}`} className="rounded-full border border-border px-3 py-1 text-sm hover:bg-secondary">{reference.reference}</Link></li>
+                <li key={reference.reference}>
+                  <Link href={`/bible/kjv/${reference.book}/${reference.chapter}${reference.verseStart ? `/${reference.verseStart}` : ""}`} className="flex flex-wrap items-baseline justify-between gap-x-4 px-4 py-3 hover:bg-secondary/60">
+                    <span className="display-serif text-lg">{reference.reference}</span>
+                    {reference.note !== undefined && <span className="text-sm text-muted-foreground">{reference.note}</span>}
+                  </Link>
+                </li>
               ))}
             </ul>
           </section>

@@ -101,6 +101,19 @@ export function createBibleRoutes(controller: BibleController): readonly RouteSp
     },
     {
       method: "GET",
+      path: "/bible/:translation/:book/:chapter/:verse/cross-references",
+      name: "bible.getCrossReferences",
+      handler: (context) => controller.getCrossReferences(context),
+      openapi: {
+        summary: "Passages related to a verse",
+        description: "Cross-references from OpenBible.info (CC BY 4.0), strongest first, each with the text of its first verse in the requested translation. Cacheable for a day.",
+        tags: TAGS,
+        parameters: [translationParam, bookParam, chapterParam, verseParam, { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 12 } }],
+        responses: { "200": { description: "Related passages; an empty list when none are known." }, "404": notFound },
+      },
+    },
+    {
+      method: "GET",
       path: "/bible/:translation/:book/:chapter/:verse",
       name: "bible.getVerse",
       handler: (context) => controller.getVerse(context),

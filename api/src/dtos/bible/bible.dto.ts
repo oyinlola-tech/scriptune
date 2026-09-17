@@ -76,3 +76,24 @@ export interface VerseSearchResultDto {
   readonly query: string;
   readonly results: readonly VerseSearchHitDto[];
 }
+
+/** A passage related to a verse, with the text of its first verse in the translation being read. */
+export interface CrossReferenceDto {
+  /** "Hebrews 1:10", or "Proverbs 8:22-30" for a passage. */
+  readonly reference: string;
+  readonly book: BookSummaryDto;
+  readonly chapter: number;
+  readonly verse: number;
+  /** Last verse when the link is to a passage, otherwise null. */
+  readonly endVerse: number | null;
+  readonly text: string;
+}
+
+export interface CrossReferencesDto {
+  readonly translation: TranslationSummaryDto;
+  /** The verse these passages relate to. */
+  readonly reference: string;
+  readonly references: readonly CrossReferenceDto[];
+  /** Credit the data's licence asks for. */
+  readonly source: { readonly name: string; readonly url: string; readonly licence: string };
+}

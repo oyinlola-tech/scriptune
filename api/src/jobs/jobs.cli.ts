@@ -1,14 +1,18 @@
 import { parseArgs } from "node:util";
 import { runImportBibleJob } from "./importBible/index.js";
+import { runImportCrossReferencesJob } from "./importCrossReferences/index.js";
 import { runImportHymnalJob } from "./importHymnal/index.js";
 import { runImportHymnsJob } from "./importHymns/index.js";
+import { runLinkScripturesJob } from "./linkScriptures/index.js";
 
 const USAGE = `Usage: node --import tsx src/jobs/jobs.cli.ts <job> [options]
 
 Jobs:
-  import:bible   Import a Bible translation (--translation KJV|AKJV|ASV|WEB|WEBC|DRC, or --all; --file <path> | --url <url>)
+  import:bible   Import a Bible translation (--translation KJV|AKJV|ASV|WEB|WEBC|DRC|YCB, or --all; --file <path> | --url <url>)
+  import:xrefs   Import verse cross-references from OpenBible.info (--file <path> | --url <url>)
   import:hymns   Import Sacred Songs and Solos (--file <path> | --url <url>)
   import:hymnal  Import any hymnal from a JSON file (--file <path>); carries its own rights status
+  link:scriptures  Find where the English hymns quote the King James Version (run after importing hymns)
 `;
 
 const { values, positionals } = parseArgs({
@@ -33,12 +37,23 @@ switch (job) {
     });
     break;
   }
+  case "import:xrefs": {
+    await runImportCrossReferencesJob({
+      ...(values.file === undefined ? {} : { file: values.file }),
+      ...(values.url === undefined ? {} : { url: values.url }),
+    });
+    break;
+  }
   case "import:hymnal": {
     if (values.file === undefined) {
       process.stderr.write("import:hymnal requires --file <path to hymnal JSON>\n");
       process.exit(1);
     }
     await runImportHymnalJob({ file: values.file });
+    break;
+  }
+  case "link:scriptures": {
+    await runLinkScripturesJob();
     break;
   }
   case "import:hymns": {

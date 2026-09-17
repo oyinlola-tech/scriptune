@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { ShareButton } from "@/components/common";
@@ -64,6 +64,23 @@ export default function HymnScreen() {
               </View>
             </View>
           ))}
+          {hymn.data.scriptureReferences.length > 0 && (
+            <View style={{ gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md }}>
+              <Text variant="eyebrow">Scripture in this hymn</Text>
+              <View style={{ borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: "hidden" }}>
+                {hymn.data.scriptureReferences.map((reference, index) => (
+                  <Link key={reference.reference} href={reference.verseStart === null ? { pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: "kjv", book: reference.book, chapter: String(reference.chapter) } } : { pathname: "/bible/[translation]/[book]/[chapter]/[verse]", params: { translation: "kjv", book: reference.book, chapter: String(reference.chapter), verse: String(reference.verseStart) } }} asChild>
+                    <Pressable accessibilityRole="link" style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                      <View style={{ paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: colors.border, gap: 2 }}>
+                        <Text variant="title" style={{ fontSize: 17 }}>{reference.reference}</Text>
+                        {reference.note !== undefined && <Text variant="muted" style={{ fontSize: 13 }}>{reference.note}</Text>}
+                      </View>
+                    </Pressable>
+                  </Link>
+                ))}
+              </View>
+            </View>
+          )}
           <NoteEditor type="hymn" targetKey={hymn.data.slug} />
           {text && <Text variant="muted" style={{ fontSize: 12 }}>{text.rightsStatus === "public-domain" ? "These words are in the public domain." : "Used by permission of the rights holder."}</Text>}
         </>

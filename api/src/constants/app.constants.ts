@@ -75,3 +75,18 @@ export const OPENAPI_TAGS = Object.freeze([
   { name: "library", description: "Saved items, collections, notes and history." },
   { name: "export", description: "Whole-corpus downloads for offline clients." },
 ] as const);
+
+/** Cross-references change only when the dataset is re-imported, so clients may keep them for a day. */
+export const CROSS_REFERENCE_CACHE_SECONDS = 86_400;
+export const CROSS_REFERENCE_LIMIT = 8;
+/** How many links are kept for each verse at import; also the most one request may ask for. */
+export const CROSS_REFERENCE_MAX_PER_VERSE = 12;
+/** The credit OpenBible.info's CC-BY licence asks for. */
+export const CROSS_REFERENCE_SOURCE = Object.freeze({ name: "OpenBible.info", url: "https://www.openbible.info/labs/cross-references/", licence: "CC BY 4.0" });
+/**
+ * Translations that number the Psalms the Vulgate way, one behind the Hebrew
+ * numbering the cross-references use; links into the Psalms would show the
+ * wrong psalm there, so they are left out.
+ */
+export const VULGATE_PSALM_TRANSLATIONS: ReadonlySet<string> = new Set(["DRC"]);
+export const PSALMS_BOOK_ID = 19;

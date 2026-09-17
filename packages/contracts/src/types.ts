@@ -58,6 +58,26 @@ export interface VerseDetailDto {
   context: { before: VerseDto[]; after: VerseDto[] };
 }
 
+/** A passage related to a verse, with the text of its first verse in the translation being read. */
+export interface CrossReferenceDto {
+  /** "Hebrews 1:10", or "Proverbs 8:22-30" for a passage; always with the English book name. */
+  reference: string;
+  book: { slug: string; name: string; localName: string | null; abbreviation: string };
+  chapter: number;
+  verse: number;
+  /** Last verse when the link is to a passage, otherwise null. */
+  endVerse: number | null;
+  text: string;
+}
+
+export interface CrossReferencesDto {
+  translation: TranslationSummaryDto;
+  reference: string;
+  references: CrossReferenceDto[];
+  /** Credit the data's licence asks for. */
+  source: { name: string; url: string; licence: string };
+}
+
 export interface VerseSearchHitDto extends VerseDto {
   /** Code of the translation this text comes from, e.g. "KJV" or "WEB". */
   translation: string;

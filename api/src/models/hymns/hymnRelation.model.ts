@@ -27,6 +27,8 @@ export interface ScriptureReferenceModel {
   readonly verseStart: number | null;
   readonly verseEnd: number | null;
   readonly note: string | null;
+  /** "editorial" when a hymnal states the link, "matched" when it was found by comparing the words. */
+  readonly origin: string;
 }
 
 export interface SourceModel {

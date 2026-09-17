@@ -14,6 +14,12 @@ export function bookLabel(book: { name: string; localName?: string | null }): st
   return book.localName ?? book.name;
 }
 
+/** "Saamu 23:1-4": a passage labelled with the book name of the translation being read. */
+export function passageLabel(passage: { book: { name: string; localName?: string | null }; chapter: number; verse: number; endVerse?: number | null }): string {
+  const end = passage.endVerse === null || passage.endVerse === undefined ? "" : `-${passage.endVerse}`;
+  return `${bookLabel(passage.book)} ${passage.chapter}:${passage.verse}${end}`;
+}
+
 /** How a rights status reads to a person. */
 export function rightsLabel(status: string): string {
   if (status === "public-domain") return "Public domain";
@@ -42,6 +48,7 @@ export const CREDITS: { scripture: Credit[]; hymns: Credit[]; software: Credit[]
     { work: "Douay-Rheims (Challoner Revision)", holder: "Public domain", status: "public-domain", detail: "1752 revision, public domain. Text from scrollmapper/bible_databases." },
     { work: "Bíbélì Mímọ́ ní Èdè Yorùbá Òde-Òní (Yoruba Contemporary Bible)", holder: "Biblica, Inc.", status: "open-licence", detail: "Biblica® Open Yoruba Contemporary Bible™. Copyright © 2009, 2017 by Biblica, Inc. Used, unaltered, under the Creative Commons Attribution-ShareAlike 4.0 International licence (creativecommons.org/licenses/by-sa/4.0). The original work is available free of charge from Biblica at open.bible. Text from eBible.org.", url: "https://open.bible" },
     { work: "World English Bible and Catholic Edition", holder: "eBible.org", status: "public-domain", detail: "Dedicated to the public domain by its editors.", url: "https://ebible.org" },
+    { work: "Cross-references between verses", holder: "OpenBible.info", status: "open-licence", detail: "The related passages shown beside a verse, drawn largely from the Treasury of Scripture Knowledge. Used under the Creative Commons Attribution 4.0 licence.", url: "https://www.openbible.info/labs/cross-references/" },
   ],
   hymns: [
     { work: "Sacred Songs and Solos", holder: "Ira D. Sankey", status: "public-domain", detail: "The 1200-piece edition is public domain. Digitised text from techoveride/Sacred_Songs_and_Solos.", url: "https://github.com/techoveride/Sacred_Songs_and_Solos" },

@@ -1,10 +1,11 @@
 import type { QueryBus } from "@zudojs/cqrs";
 import type { HttpRouterContext, HttpResponseContext } from "@zudojs/http";
-import { EXPORT_CACHE_SECONDS } from "../constants/index.js";
-import type { BibleExportDto, ChapterDto, TranslationDto, VerseDetailDto, VerseSearchResultDto } from "../dtos/index.js";
+import { CROSS_REFERENCE_CACHE_SECONDS, EXPORT_CACHE_SECONDS } from "../constants/index.js";
+import type { BibleExportDto, ChapterDto, CrossReferencesDto, TranslationDto, VerseDetailDto, VerseSearchResultDto } from "../dtos/index.js";
 import {
   ExportTranslationQuery,
   GetChapterQuery,
+  GetCrossReferencesQuery,
   GetVerseQuery,
   ListBooksQuery,
   ListTranslationsQuery,
@@ -15,6 +16,7 @@ import { cachedJsonResponse, jsonResponse } from "../utils/http/response.helper.
 import { parseOrBadRequest } from "../utils/http/validation.helper.js";
 import {
   chapterParamsSchema,
+  crossReferenceQuerySchema,
   searchQuerySchema,
   translationParamsSchema,
   verseParamsSchema,
@@ -65,6 +67,13 @@ export class BibleController {
       new GetVerseQuery({ ...params, context: options.context }),
     );
     return jsonResponse(result);
+  }
+
+  public async getCrossReferences(context: HttpRouterContext): Promise<HttpResponseContext> {
+    const params = parseOrBadRequest(verseParamsSchema, context.params, "verse reference");
+    const options = parseOrBadRequest(crossReferenceQuerySchema, context.query, "query");
+    const result = await this.queryBus.execute<GetCrossReferencesQuery, CrossReferencesDto>(new GetCrossReferencesQuery({ ...params, limit: options.limit }));
+    return cachedJsonResponse(result, CROSS_REFERENCE_CACHE_SECONDS);
   }
 
   public async search(context: HttpRouterContext): Promise<HttpResponseContext> {

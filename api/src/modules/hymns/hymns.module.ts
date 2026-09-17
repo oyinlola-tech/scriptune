@@ -13,7 +13,7 @@ import {
 import { createHymnRoutes } from "../../routes/index.js";
 import { HymnLookup } from "../../services/hymns/index.js";
 import { registerRoutes } from "../../utils/http/route.helper.js";
-import { IMPORT_HYMNAL, ImportHymnalHandler } from "./commands/index.js";
+import { IMPORT_HYMNAL, ImportHymnalHandler, LINK_SCRIPTURES, LinkScripturesHandler } from "./commands/index.js";
 import {
   GET_HYMN,
   EXPORT_HYMNAL,
@@ -76,6 +76,7 @@ export class HymnsModule extends BaseModule {
     const lookup = new HymnLookup(hymns, hymnals);
 
     commandBus.register(IMPORT_HYMNAL, new ImportHymnalHandler(sources, hymnals, hymnImports));
+    commandBus.register(LINK_SCRIPTURES, new LinkScripturesHandler(links));
     queryBus.register(GET_HYMN, new GetHymnHandler(lookup));
     queryBus.register(GET_HYMN_SUMMARIES, new GetHymnSummariesHandler(hymns));
     queryBus.register(LIST_HYMNS, new ListHymnsHandler(hymns));

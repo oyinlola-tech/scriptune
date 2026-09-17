@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type {
+  CrossReferencesDto,
   AuthSessionDto, BookDto, ChapterDto, CollectionDetailDto, CollectionDto, CollectionItemDto, HistoryEntryDto, HistoryEntryInput,
   HymnalDto, HymnalEntryDto, HymnDetailDto, HymnSearchHitDto, HymnSummaryDto, LibraryTargetType, NoteDto, PageDto,
   RecognitionMode, RecognitionResultDto, SavedItemDto, SearchAllResultDto, TranslationDto, TranslationSummaryDto, UserDto, VerseDetailDto, VerseSearchHitDto,
@@ -20,6 +21,8 @@ export const bible = {
   translations: () => api<{ translations: TranslationDto[] }>("/bible/translations", publicCache),
   books: (translation: string) => api<{ translation: TranslationSummaryDto; books: BookDto[] }>(`/bible/${encodeURIComponent(translation)}/books`, publicCache),
   chapter: (translation: string, book: string, chapter: number) => api<ChapterDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}`, publicCache),
+  crossReferences: (translation: string, book: string, chapter: number, verse: number) =>
+    api<CrossReferencesDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}/${verse}/cross-references`, publicCache),
   verse: (translation: string, book: string, chapter: number, verse: number, context = 2) =>
     api<VerseDetailDto>(`/bible/${encodeURIComponent(translation)}/${encodeURIComponent(book)}/${chapter}/${verse}${q({ context })}`, publicCache),
   search: (translation: string, text: string, limit = 10) =>

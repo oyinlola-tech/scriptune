@@ -4,20 +4,23 @@ import { APP_VERSION, TOKENS } from "../../constants/index.js";
 import { BibleController } from "../../controllers/index.js";
 import {
   PrismaBookRepository,
+  PrismaCrossReferenceRepository,
   PrismaTranslationRepository,
   PrismaVerseRepository,
 } from "../../repositories/index.js";
 import { createBibleRoutes } from "../../routes/index.js";
 import { BibleLookup } from "../../services/bible/index.js";
 import { registerRoutes } from "../../utils/http/route.helper.js";
-import { IMPORT_TRANSLATION, ImportTranslationHandler } from "./commands/index.js";
+import { IMPORT_CROSS_REFERENCES, IMPORT_TRANSLATION, ImportCrossReferencesHandler, ImportTranslationHandler } from "./commands/index.js";
 import {
   EXPORT_TRANSLATION,
   ExportTranslationHandler,
   GET_CHAPTER,
+  GET_CROSS_REFERENCES,
   GET_VERSE,
   GET_VERSES_BY_KEYS,
   GetChapterHandler,
+  GetCrossReferencesHandler,
   GetVerseHandler,
   GetVersesByKeysHandler,
   LIST_BOOKS,
@@ -34,7 +37,7 @@ export interface BibleModuleOptions {
 }
 
 /**
- * Translations, books, verses and verse search.
+ * Translations, books, verses, verse search and cross-references.
  *
  * Registers its handlers on the buses and, when HTTP is present, its routes
  * on the shared router.
@@ -61,13 +64,16 @@ export class BibleModule extends BaseModule {
     const translations = new PrismaTranslationRepository(prisma);
     const books = new PrismaBookRepository(prisma);
     const verses = new PrismaVerseRepository(prisma);
+    const crossReferences = new PrismaCrossReferenceRepository(prisma);
     const lookup = new BibleLookup(translations, books);
 
     commandBus.register(IMPORT_TRANSLATION, new ImportTranslationHandler(translations, books, verses));
+    commandBus.register(IMPORT_CROSS_REFERENCES, new ImportCrossReferencesHandler(crossReferences));
     queryBus.register(LIST_TRANSLATIONS, new ListTranslationsHandler(translations));
     queryBus.register(LIST_BOOKS, new ListBooksHandler(lookup, books));
     queryBus.register(GET_CHAPTER, new GetChapterHandler(lookup, verses));
     queryBus.register(GET_VERSE, new GetVerseHandler(lookup, verses));
+    queryBus.register(GET_CROSS_REFERENCES, new GetCrossReferencesHandler(lookup, books, crossReferences));
     queryBus.register(GET_VERSES_BY_KEYS, new GetVersesByKeysHandler(translations, books, verses));
     queryBus.register(SEARCH_VERSES, new SearchVersesHandler(lookup, translations, books, verses));
     queryBus.register(EXPORT_TRANSLATION, new ExportTranslationHandler(lookup, books, verses));

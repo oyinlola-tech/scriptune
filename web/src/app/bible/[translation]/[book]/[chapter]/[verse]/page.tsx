@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CrossReferences } from "@/components/bible/cross-references";
 import { TranslationNotice } from "@/components/bible/translation-notice";
 import { VerseBlock } from "@/components/bible/verse-block";
 import { Page } from "@/components/layout/page";
@@ -15,11 +16,13 @@ type Params = Promise<{ translation: string; book: string; chapter: string; vers
 async function load(params: Params) {
   const { translation, book, chapter, verse } = await params;
   try {
-    const [detail, related] = await Promise.all([
+    const [detail, related, crossReferences] = await Promise.all([
       bible.verse(translation, book, Number(chapter), Number(verse), 2),
       hymns.forVerse(translation, book, Number(chapter), Number(verse)).catch(() => ({ reference: "", hymns: [] })),
+      // An extra; the verse still opens if these cannot be had.
+      bible.crossReferences(translation, book, Number(chapter), Number(verse)).catch(() => null),
     ]);
-    return { detail, related };
+    return { detail, related, crossReferences };
   } catch (error) {
     if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
     throw error;
@@ -36,7 +39,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function VersePage({ params }: { params: Params }) {
   const data = await load(params);
   if (data === null) notFound();
-  const { detail, related } = data;
+  const { detail, related, crossReferences } = data;
   const code = detail.translation.code;
   return (
     <Page width="narrow">
@@ -57,6 +60,7 @@ export default async function VersePage({ params }: { params: Params }) {
       </div>
       <TranslationNotice translation={detail.translation} />
       <NoteEditor type="verse" targetKey={verseKey(code, detail.verse.book.slug, detail.verse.chapter, detail.verse.verse)} />
+      {crossReferences !== null && <CrossReferences data={crossReferences} />}
       <section className="mt-12 border-t border-border pt-6">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Hymns on this passage</h2>
         {related.hymns.length === 0 ? (

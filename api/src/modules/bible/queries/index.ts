@@ -5,6 +5,7 @@
  */
 export * from "./exportTranslation/index.js";
 export * from "./getChapter/index.js";
+export * from "./getCrossReferences/index.js";
 export * from "./getVerse/index.js";
 export * from "./getVersesByKeys/index.js";
 export * from "./listBooks/index.js";

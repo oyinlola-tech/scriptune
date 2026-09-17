@@ -1,4 +1,5 @@
 import { z } from "@zudojs/validation";
+import { CROSS_REFERENCE_LIMIT, CROSS_REFERENCE_MAX_PER_VERSE } from "../constants/index.js";
 
 export const translationCodeSchema = z
   .string()
@@ -20,6 +21,10 @@ export const verseParamsSchema = chapterParamsSchema.extend({ verse: verseNumber
 
 export const verseQuerySchema = z.object({
   context: z.coerce.number().int().min(0).max(5).default(0),
+});
+
+export const crossReferenceQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(CROSS_REFERENCE_MAX_PER_VERSE).default(CROSS_REFERENCE_LIMIT),
 });
 
 export const searchQuerySchema = z.object({

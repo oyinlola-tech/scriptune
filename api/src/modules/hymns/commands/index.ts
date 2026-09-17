@@ -4,3 +4,4 @@
  * @module modules/hymns/commands
  */
 export * from "./importHymnal/index.js";
+export * from "./linkScriptures/index.js";

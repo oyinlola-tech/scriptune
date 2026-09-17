@@ -1,4 +1,5 @@
 import type {
+  CrossReferencesDto,
   AuthSessionDto, BookDto, ChapterDto, CollectionDetailDto, CollectionDto, CollectionItemDto, HistoryEntryDto, HistoryEntryInput, HymnalDto,
   HymnalEntryDto, HymnDetailDto, HymnSummaryDto, LibraryTargetType, NoteDto, PageDto, RecognitionMode, RecognitionResultDto, SavedItemDto,
   SearchAllResultDto, TranslationDto, TranslationSummaryDto, UserDto, VerseDetailDto,
@@ -20,10 +21,13 @@ export const bible = {
   translations: () => api<{ translations: TranslationDto[] }>("/bible/translations", anonymous),
   books: (translation: string) => api<{ translation: TranslationSummaryDto; books: BookDto[] }>(`/bible/${translation}/books`, anonymous),
   chapter: (translation: string, book: string, chapter: number) => api<ChapterDto>(`/bible/${translation}/${book}/${chapter}`, anonymous),
+  crossReferences: (translation: string, book: string, chapter: number, verse: number) => api<CrossReferencesDto>(`/bible/${translation}/${book}/${chapter}/${verse}/cross-references`, anonymous),
   verse: (translation: string, book: string, chapter: number, verse: number) => api<VerseDetailDto>(`/bible/${translation}/${book}/${chapter}/${verse}`, anonymous),
 };
 
 export const hymns = {
+  forVerse: (translation: string, book: string, chapter: number, verse: number) =>
+    api<{ reference: string; hymns: { slug: string; title: string; firstLine: string | null }[] }>(`/bible/${translation}/${book}/${chapter}/${verse}/related`, anonymous),
   list: (page = 1, pageSize = 50) => api<PageDto<HymnSummaryDto>>(`/hymns${q({ page, pageSize })}`, anonymous),
   get: (slug: string) => api<HymnDetailDto>(`/hymns/${slug}`, anonymous),
   hymnals: () => api<{ hymnals: HymnalDto[] }>("/hymnals", anonymous),
