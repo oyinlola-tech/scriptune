@@ -30,7 +30,7 @@ bug bounty at this time.
 - The deployed services at scriptune.app once they are live.
 
 Out of scope: the public-domain scripture and hymn text, third-party services
-we call (Deepgram, Google sign-in, hosting providers), and vulnerabilities in
+we call (Google sign-in, hosting providers), and vulnerabilities in
 dependencies with no reachable path in Scriptune. Dependency reports are still
 appreciated so we can update.
 
@@ -42,10 +42,11 @@ fixes.
 ## How the project is built to stay safe
 
 - Secrets never live in the repository. `.env` files are ignored by git; only
-  `.env.example` files are tracked. The Deepgram key, auth signing secrets and
-  Google credentials exist solely on the API server.
-- Audio is forwarded to the speech-to-text provider and never stored. Only
-  the transcript and the matched results are kept, as the Privacy Policy says.
+  `.env.example` files are tracked. Auth signing secrets and Google credentials
+  exist solely on the API server.
+- Audio is transcribed by a Whisper service we run ourselves (or on the phone
+  for offline listening) and never stored. No outside speech service sees it.
+  Only the transcript and the matched results are kept, as the Privacy Policy says.
 - Passwords are stored as salted scrypt hashes. Sessions use short-lived
   access tokens and rotating refresh tokens; every session can be revoked.
   On mobile the refresh token is kept in the device keychain.
