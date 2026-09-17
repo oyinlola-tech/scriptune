@@ -115,7 +115,7 @@ do fuzzy work it does not need.
     <td width="50%"><img src="docs/images/web-hymn.png" alt="A hymn page on the website"></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/web-bible.png" alt="Psalm 23 on the website"></td>
+    <td width="50%"><img src="docs/images/web-bible.png" alt="Psalm 23 in Yorùbá on the website, with the translation switcher"></td>
     <td width="50%"><img src="docs/images/web-home-dark.png" alt="The website in the dark theme"></td>
   </tr>
 </table>
