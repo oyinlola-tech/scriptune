@@ -151,9 +151,10 @@ def _fetch_wanted_in_background() -> None:
     global _load_error
     try:
         _load(download_model(MODEL_NAME), MODEL_NAME)
-    except Exception as error:  # noqa: BLE001 - surfaced on /health rather than lost in a thread
-        _load_error = f"{MODEL_NAME}: {error}"
-        log.error("Could not load Whisper %s: %s", MODEL_NAME, error)
+    except Exception:  # noqa: BLE001 - flagged on /health rather than lost in a thread
+        # The detail (paths, URLs) stays in the server log; /health only says that it failed.
+        _load_error = f"The {MODEL_NAME} model could not be downloaded or loaded. See the transcriber log."
+        log.exception("Could not load Whisper %s", MODEL_NAME)
 
 
 @asynccontextmanager
@@ -194,7 +195,8 @@ def decode_audio(data: bytes) -> np.ndarray:
     try:
         container = av.open(io.BytesIO(data))
     except DECODE_ERRORS as error:
-        raise HTTPException(status_code=415, detail=f"Audio could not be decoded: {error}") from error
+        log.warning("Audio could not be decoded: %s", error)
+        raise HTTPException(status_code=415, detail="The audio could not be decoded. Send a common format such as WAV, M4A, MP3, OGG or WebM.") from error
     with container:
         if container.duration is not None and container.duration / av.time_base > MAX_SECONDS:
             raise HTTPException(status_code=413, detail=f"Recordings longer than {MAX_SECONDS:.0f} seconds are not accepted.")
@@ -215,7 +217,8 @@ def decode_audio(data: bytes) -> np.ndarray:
             for resampled in resampler.resample(None):
                 chunks.append(resampled.to_ndarray())
         except DECODE_ERRORS as error:
-            raise HTTPException(status_code=415, detail=f"Audio could not be decoded: {error}") from error
+            log.warning("Audio could not be decoded: %s", error)
+            raise HTTPException(status_code=415, detail="The audio could not be decoded. Send a common format such as WAV, M4A, MP3, OGG or WebM.") from error
     if not chunks:
         return np.zeros(0, dtype=np.float32)
     pcm = np.concatenate(chunks, axis=1)[0]
