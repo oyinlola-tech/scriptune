@@ -3,7 +3,7 @@ import { Link } from "expo-router";
 import { LogIn, LogOut, UserX } from "lucide-react-native";
 import { Alert, Pressable, View } from "react-native";
 import Constants from "expo-constants";
-import { AppearancePicker, Button, ConnectionSettings, ListeningSettings, Screen, Text } from "@/components/ui";
+import { AppearancePicker, Button, ConnectionSettings, ListeningSettings, ReadingSizePicker, Screen, Text } from "@/components/ui";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { toast } from "@/lib/toast";
@@ -62,7 +62,7 @@ function AccountSection() {
   );
 }
 
-/** Listening, appearance, account and the small print, in one quiet place. */
+/** Listening, appearance, reading size, account and the small print, in one quiet place. */
 export default function SettingsScreen() {
   const colors = useColors();
   const version = Constants.expoConfig?.version ?? "";
@@ -71,6 +71,9 @@ export default function SettingsScreen() {
       <ListeningSettings />
       <View style={{ paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
         <AppearancePicker />
+      </View>
+      <View style={{ paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+        <ReadingSizePicker />
       </View>
       <ConnectionSettings />
       <AccountSection />

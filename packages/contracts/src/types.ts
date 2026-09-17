@@ -128,6 +128,20 @@ export interface HymnDetailDto {
   scriptureReferences: { reference: string; book: string; chapter: number; verseStart: number | null; verseEnd: number | null; note?: string }[];
 }
 
+/** A hymn worth reading after another, with the reason the two are paired. */
+export interface RelatedHymnDto {
+  slug: string;
+  title: string;
+  firstLine: string | null;
+  /** "Both draw on Psalms 23", or "Similar words". */
+  reason: string;
+}
+
+export interface RelatedHymnsDto {
+  slug: string;
+  related: RelatedHymnDto[];
+}
+
 export interface HymnSearchHitDto {
   slug: string;
   title: string;

@@ -3,7 +3,7 @@ import type {
   CrossReferencesDto,
   AuthSessionDto, BookDto, ChapterDto, CollectionDetailDto, CollectionDto, CollectionItemDto, HistoryEntryDto, HistoryEntryInput,
   HymnalDto, HymnalEntryDto, HymnDetailDto, HymnSearchHitDto, HymnSummaryDto, LibraryTargetType, NoteDto, PageDto,
-  RecognitionMode, RecognitionResultDto, SavedItemDto, SearchAllResultDto, TranslationDto, TranslationSummaryDto, UserDto, VerseDetailDto, VerseSearchHitDto,
+  RecognitionMode, RecognitionResultDto, RelatedHymnsDto, SavedItemDto, SearchAllResultDto, TranslationDto, TranslationSummaryDto, UserDto, VerseDetailDto, VerseSearchHitDto,
 } from "./types";
 
 const q = (params: Record<string, string | number | undefined>) => {
@@ -33,6 +33,7 @@ export const hymns = {
   list: (params: { page?: number; limit?: number; hymnal?: string; topic?: string; language?: string } = {}) =>
     api<PageDto<HymnSummaryDto>>(`/hymns${q(params)}`, publicCache),
   get: (slug: string) => api<HymnDetailDto>(`/hymns/${encodeURIComponent(slug)}`, publicCache),
+  related: (slug: string) => api<RelatedHymnsDto>(`/hymns/${encodeURIComponent(slug)}/related`, publicCache),
   search: (text: string, limit = 10) => api<{ query: string; results: HymnSearchHitDto[] }>(`/hymns/search${q({ q: text, limit })}`, { auth: false }),
   hymnals: () => api<{ hymnals: HymnalDto[] }>("/hymnals", publicCache),
   hymnal: (slug: string, page = 1, limit = 50) => api<{ hymnal: HymnalDto; entries: PageDto<HymnalEntryDto> }>(`/hymnals/${encodeURIComponent(slug)}${q({ page, limit })}`, publicCache),

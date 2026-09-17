@@ -13,12 +13,32 @@ import re
 import sys
 from pypdf import PdfReader
 
-SOLFA = set("drmfstlDRMFSTL")
+# Tonic sol-fa syllables, including the sharpened and flattened ones ("fe", "ta").
+SOLFA_NOTES = {"d", "r", "m", "f", "s", "l", "t", "de", "re", "ri", "me", "fe", "se", "le", "ta", "ba", "i"}
+SOLFA_LABEL = re.compile(r"^\s*(chro?rus|chorus|cho|ch|cr|c)\s*[:.]?\s*", re.IGNORECASE)
+CHORUS_LABEL = re.compile(r"^\s*(chro?rus|chorus|egbe)\s*[:.]\s*", re.IGNORECASE)
+
+
+def is_note(part: str) -> bool:
+    """One sol-fa syllable, or a few written together with no separator ("mmm", "fs")."""
+    lowered = part.lower()
+    return lowered in SOLFA_NOTES or (len(lowered) <= 4 and all(ch in "drmfstl" for ch in lowered))
 
 
 def is_solfa(line: str) -> bool:
-    core = re.sub(r"[\s;:.\-\d()}\]\[|]", "", line).replace("ce", "")
-    return len(core) > 0 and all(ch in SOLFA for ch in core)
+    """True for a line of tonic sol-fa: "s:s:l:s:fe:s:s", "cr: r:r:m:r;m:f:s:-", "s s m s d r m r"."""
+    body = re.sub(r"[({\[]\s*\d*\s*ce\s*[)}\]]", " ", line, flags=re.IGNORECASE)
+    # Nothing but note letters once the punctuation is gone: "rd mm r", "sdfmrd", "d – sfm – r – d".
+    letters = re.sub(r"[^A-Za-z]", "", SOLFA_LABEL.sub("", body, count=1) if re.search(r"[:;|]", body) else body)
+    if letters and all(ch in "drmfstlDRMFSTL" for ch in letters):
+        return True
+    punctuated = re.search(r"[:;|]", body) is not None
+    body = SOLFA_LABEL.sub("", body, count=1) if punctuated else body
+    notes = [part for part in re.split(r"[\s;:.,\-–—|'’\d()\[\]{}]+", body) if part]
+    # Bare letters with no punctuation need to be a longer run before they are taken for music.
+    if len(notes) < (3 if punctuated else 4):
+        return False
+    return sum(1 for part in notes if is_note(part)) / len(notes) >= 0.8
 
 
 def is_header(line: str) -> bool:
@@ -76,37 +96,58 @@ def parse(pdf_path: str):
 
 
 def to_stanzas(body: list[str]):
+    body = [line for line in body if not is_solfa(line)]
     if not body:
         return []
     stanzas = []
     current_lines: list[str] = []
     current_number = None
+    current_kind = "verse"
+
+    def close():
+        nonlocal current_lines
+        if current_lines:
+            stanzas.append(make_stanza(current_number if current_kind == "verse" else None, current_lines, current_kind))
+        current_lines = []
+
     for line in body:
         verse = re.match(r"^(\d+)\s*[:.]\s*(.*)$", line)
+        chorus = CHORUS_LABEL.match(line)
         if verse:
-            if current_lines:
-                stanzas.append(make_stanza(current_number, current_lines))
+            close()
+            current_kind = "verse"
             current_number = int(verse.group(1))
             rest = verse.group(2).strip()
             current_lines = [rest] if rest else []
+        elif chorus:
+            # "Chorus: Gba to ba rọ," opens the refrain, which runs to the next numbered verse.
+            close()
+            current_kind = "chorus"
+            rest = line[chorus.end():].strip()
+            current_lines = [rest] if rest else []
         else:
             current_lines.append(line)
-    if current_lines:
-        stanzas.append(make_stanza(current_number, current_lines))
-    # If nothing was numbered, it is a single verse.
-    numbered = [s for s in stanzas if s["number"] is not None]
-    if not numbered and stanzas:
-        stanzas = [{"number": 1, "kind": "verse", "lines": [ln for s in stanzas for ln in s["lines"]]}]
+    close()
+    # If nothing was numbered, it is a single verse (with its refrain, when it has one).
+    verses = [s for s in stanzas if s["kind"] == "verse"]
+    if verses and all(s["number"] is None for s in verses):
+        if len(verses) == len(stanzas):
+            stanzas = [{"number": 1, "kind": "verse", "lines": [ln for s in stanzas for ln in s["lines"]]}]
+        else:
+            for index, stanza in enumerate(verses, start=1):
+                stanza["number"] = index
     return [s for s in stanzas if s["lines"]]
 
 
-def make_stanza(number, lines):
-    return {"number": number, "kind": "verse", "lines": [ln for ln in lines if ln.strip()]}
+def make_stanza(number, lines, kind="verse"):
+    return {"number": number, "kind": kind, "lines": [ln for ln in lines if ln.strip()]}
 
 
 def title_of(body: list[str], number: int, lang: str) -> str:
     for line in body:
-        stripped = re.sub(r"^\d+\s*[:.]\s*", "", line).strip()
+        if is_solfa(line):
+            continue
+        stripped = CHORUS_LABEL.sub("", re.sub(r"^\d+\s*[:.]\s*", "", line), count=1).strip()
         if stripped and stripped.lower() not in ("amin", "amen"):
             return re.sub(r"[\s,;:.]+$", "", stripped)[:120]
     return f"Hymn {number}"

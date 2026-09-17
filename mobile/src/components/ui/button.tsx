@@ -5,8 +5,8 @@ import { Text } from "./text";
 
 type Variant = "primary" | "outline" | "ghost" | "danger";
 
-/** A pill button: ink for the primary action, outlined or quiet otherwise; optional leading icon. */
-export function Button({ label, icon: Icon, variant = "primary", style, ...props }: PressableProps & { label: string; icon?: LucideIcon; variant?: Variant }) {
+/** A pill button: ink for the primary action, outlined or quiet otherwise; optional icon before or after the label. */
+export function Button({ label, icon: Icon, iconSide = "leading", variant = "primary", style, ...props }: PressableProps & { label: string; icon?: LucideIcon; iconSide?: "leading" | "trailing"; variant?: Variant }) {
   const colors = useColors();
   const primary = variant === "primary";
   const foreground = primary ? colors.background : variant === "danger" ? colors.danger : colors.ink;
@@ -30,8 +30,9 @@ export function Button({ label, icon: Icon, variant = "primary", style, ...props
       ]}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-        {Icon && <Icon size={16} color={foreground} strokeWidth={2} />}
+        {Icon && iconSide === "leading" && <Icon size={16} color={foreground} strokeWidth={2} />}
         <Text style={{ color: foreground, fontWeight: "500" }}>{label}</Text>
+        {Icon && iconSide === "trailing" && <Icon size={16} color={foreground} strokeWidth={2} />}
       </View>
     </Pressable>
   );

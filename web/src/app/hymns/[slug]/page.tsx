@@ -31,7 +31,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function HymnPage({ params }: { params: Promise<{ slug: string }> }) {
-  const hymn = await loadHymn((await params).slug);
+  const { slug } = await params;
+  // Related hymns are an extra; the hymn still opens if they cannot be had.
+  const [hymn, related] = await Promise.all([loadHymn(slug), hymns.related(slug).then((data) => data.related, () => [])]);
   if (hymn === null) notFound();
   const text = hymn.texts.find((entry) => entry.language === "en") ?? hymn.texts[0];
   return (
@@ -73,6 +75,21 @@ export default async function HymnPage({ params }: { params: Promise<{ slug: str
                   <Link href={`/bible/kjv/${reference.book}/${reference.chapter}${reference.verseStart ? `/${reference.verseStart}` : ""}`} className="flex flex-wrap items-baseline justify-between gap-x-4 px-4 py-3 hover:bg-secondary/60">
                     <span className="display-serif text-lg">{reference.reference}</span>
                     {reference.note !== undefined && <span className="text-sm text-muted-foreground">{reference.note}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {related.length > 0 && (
+          <section className="mt-12 border-t border-border pt-6" aria-labelledby="related-hymns">
+            <h2 id="related-hymns" className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Sing next</h2>
+            <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card">
+              {related.map((entry) => (
+                <li key={entry.slug}>
+                  <Link href={`/hymns/${entry.slug}`} className="flex flex-wrap items-baseline justify-between gap-x-4 px-4 py-3 hover:bg-secondary/60">
+                    <span className="display-serif text-lg">{entry.title}</span>
+                    <span className="text-sm text-muted-foreground">{entry.reason}</span>
                   </Link>
                 </li>
               ))}

@@ -5,11 +5,11 @@ import { Pressable, View } from "react-native";
 import { ShareButton } from "@/components/common";
 import { AddToCollectionButton, NoteEditor, SaveButton } from "@/components/library";
 import { TranslationNotice } from "@/components/bible";
-import { Notice, Screen, Text } from "@/components/ui";
+import { Notice, ReadingText, Screen, Text } from "@/components/ui";
 import { bible, hymns, verseKey } from "@/lib/api";
 import { readLocalVerse, useIsOnline } from "@/lib/offline";
 import { keys } from "@/lib/query";
-import { fonts, radius, spacing, useColors } from "@/theme";
+import { radius, spacing, useColors } from "@/theme";
 
 /** One verse, set large, with the verses around it in a quieter voice. */
 export default function VerseScreen() {
@@ -32,7 +32,7 @@ export default function VerseScreen() {
         <>
           <Text variant="eyebrow">{detail.data.translation.name}</Text>
           <Text variant="display">{detail.data.verse.reference}</Text>
-          <Text style={{ fontFamily: fonts.serif, fontSize: 26, lineHeight: 38, marginVertical: spacing.sm }}>{detail.data.verse.text}</Text>
+          <ReadingText size={26} style={{ marginVertical: spacing.sm }}>{detail.data.verse.text}</ReadingText>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
             <SaveButton type="verse" targetKey={verseKey(detail.data.translation.code, detail.data.verse.book.slug, chapter, verse)} />
             <AddToCollectionButton type="verse" targetKey={verseKey(detail.data.translation.code, detail.data.verse.book.slug, chapter, verse)} />

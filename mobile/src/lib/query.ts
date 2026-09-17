@@ -25,6 +25,7 @@ export const keys = {
   hymnals: () => ["hymnals"] as const,
   hymnal: (slug: string) => ["hymnal", slug] as const,
   verse: (translation: string, book: string, chapter: number, verse: number) => ["verse", translation, book, chapter, verse] as const,
+  relatedHymns: (slug: string) => ["related-hymns", slug] as const,
   hymnsForVerse: (translation: string, book: string, chapter: number, verse: number) => ["hymns-for-verse", translation, book, chapter, verse] as const,
   crossReferences: (translation: string, book: string, chapter: number, verse: number) => ["cross-references", translation, book, chapter, verse] as const,
   search: (query: string) => ["search", query] as const,

@@ -1,6 +1,5 @@
 import { bookLabel } from "@scriptune/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { Link } from "expo-router";
 import { Pressable, View } from "react-native";
 import { Notice, Screen, Text } from "@/components/ui";
@@ -8,6 +7,7 @@ import { bible } from "@/lib/api";
 import { DEFAULT_TRANSLATION } from "@/lib/config";
 import { listLocalBooks, useCorpora, useIsOnline } from "@/lib/offline";
 import { keys } from "@/lib/query";
+import { useSettings } from "@/lib/settings";
 import { radius, spacing, useColors } from "@/theme";
 
 const GROUPS = [
@@ -21,7 +21,8 @@ export default function BibleScreen() {
   const colors = useColors();
   const online = useIsOnline();
   const { corpora } = useCorpora();
-  const [translation, setTranslation] = useState(DEFAULT_TRANSLATION);
+  const translation = useSettings((state) => state.translation) ?? DEFAULT_TRANSLATION;
+  const setTranslation = useSettings((state) => state.setTranslation);
   const translations = useQuery({ queryKey: ["bible", "translations"], queryFn: () => bible.translations(), enabled: online });
   const choices = translations.data?.translations.map((entry) => ({ code: entry.code, name: entry.name })) ?? corpora.filter((corpus) => corpus.kind === "bible").map((corpus) => ({ code: corpus.id, name: corpus.title }));
   const books = useQuery({ queryKey: keys.books(translation), queryFn: async () => (await listLocalBooks(translation)) ?? bible.books(translation.toLowerCase()) });
@@ -46,15 +47,20 @@ export default function BibleScreen() {
           <Text variant="eyebrow" style={{ color: colors.muted, marginTop: spacing.sm }}>{group.label}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
             {books.data?.books.filter(group.match).map((book) => (
-              <Link key={book.slug} href={{ pathname: "/bible/[translation]/[book]", params: { translation: translation.toLowerCase(), book: book.slug } }} asChild>
-                <Pressable style={({ pressed }) => ({ width: "48%", flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingVertical: 10, paddingHorizontal: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, opacity: pressed ? 0.8 : 1 })}>
-                  <View style={{ flex: 1 }}>
-                    <Text variant="title" style={{ fontSize: 18 }} numberOfLines={1}>{bookLabel(book)}</Text>
-                    {book.localName !== null && <Text variant="muted" style={{ fontSize: 11 }} numberOfLines={1}>{book.name}</Text>}
-                  </View>
-                  <Text variant="muted" style={{ fontSize: 12 }}>{book.chapterCount}</Text>
-                </Pressable>
-              </Link>
+              <View key={book.slug} style={{ width: "48%" }}>
+                <Link href={{ pathname: "/bible/[translation]/[book]", params: { translation: translation.toLowerCase(), book: book.slug } }} asChild>
+                  <Pressable accessibilityRole="link" accessibilityLabel={`${bookLabel(book)}, ${book.chapterCount} chapters`} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                    {/* Layout lives on this View: a Pressable inside Link asChild loses function styles on web. */}
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm, minHeight: 52, paddingVertical: 10, paddingHorizontal: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="title" style={{ fontSize: 18 }} numberOfLines={1}>{bookLabel(book)}</Text>
+                        {book.localName !== null && <Text variant="muted" style={{ fontSize: 11 }} numberOfLines={1}>{book.name}</Text>}
+                      </View>
+                      <Text variant="muted" style={{ fontSize: 12, fontVariant: ["tabular-nums"] }}>{book.chapterCount}</Text>
+                    </View>
+                  </Pressable>
+                </Link>
+              </View>
             ))}
           </View>
         </View>

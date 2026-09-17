@@ -61,18 +61,16 @@ export default async function VersePage({ params }: { params: Params }) {
       <TranslationNotice translation={detail.translation} />
       <NoteEditor type="verse" targetKey={verseKey(code, detail.verse.book.slug, detail.verse.chapter, detail.verse.verse)} />
       {crossReferences !== null && <CrossReferences data={crossReferences} />}
-      <section className="mt-12 border-t border-border pt-6">
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Hymns on this passage</h2>
-        {related.hymns.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No hymns are linked to this verse yet.</p>
-        ) : (
+      {related.hymns.length > 0 && (
+        <section className="mt-12 border-t border-border pt-6" aria-labelledby="hymns-on-passage">
+          <h2 id="hymns-on-passage" className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Hymns on this passage</h2>
           <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card">
             {related.hymns.map((hymn) => (
               <li key={hymn.slug}><Link href={`/hymns/${hymn.slug}`} className="block px-4 py-3 hover:bg-secondary/60"><span className="display-serif text-lg">{hymn.title}</span></Link></li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
     </Page>
   );
 }

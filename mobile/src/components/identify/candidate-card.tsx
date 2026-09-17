@@ -12,13 +12,16 @@ export function CandidateCard({ candidate, rank }: { candidate: RecognitionCandi
     : { pathname: "/bible/[translation]/[book]/[chapter]/[verse]", params: { translation: candidate.translation.toLowerCase(), book: candidate.book, chapter: String(candidate.chapter), verse: String(candidate.verse) } } as const;
   return (
     <Link href={href} asChild>
-      <Pressable style={({ pressed }) => ({ padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: rank === 0 ? colors.gold : colors.border, opacity: pressed ? 0.85 : 1, gap: spacing.xs })}>
+      <Pressable accessibilityRole="link" style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+        {/* Layout lives on this View: a Pressable inside Link asChild loses function styles on web. */}
+        <View style={{ padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: rank === 0 ? colors.gold : colors.border, gap: spacing.xs }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text variant="eyebrow">{candidate.type === "hymn" ? "Hymn" : candidate.translation}</Text>
           <Text variant="muted" style={{ color: candidate.confidence >= 70 ? colors.gold : colors.muted, fontVariant: ["tabular-nums"] }}>{candidate.confidence}% sure</Text>
         </View>
         <Text variant="title">{candidate.type === "hymn" ? candidate.title : candidate.reference}</Text>
         <Text variant="muted" numberOfLines={2}>{candidate.type === "hymn" ? candidate.firstLine : candidate.text}</Text>
+        </View>
       </Pressable>
     </Link>
   );

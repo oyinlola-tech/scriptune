@@ -31,8 +31,11 @@ export default function BookScreen() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }} accessibilityLabel="Chapters">
             {chapters.map((chapter) => (
               <Link key={chapter} href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter) } }} asChild>
-                <Pressable style={({ pressed }) => ({ width: 56, height: 56, alignItems: "center", justifyContent: "center", borderRadius: radius.md, borderWidth: 1, borderColor: pressed ? colors.gold : colors.border, backgroundColor: colors.surface })}>
-                  <Text style={{ fontFamily: fonts.serif, fontSize: 22 }}>{chapter}</Text>
+                <Pressable accessibilityRole="link" accessibilityLabel={`Chapter ${chapter}`} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+                  {/* Layout lives on this View: a Pressable inside Link asChild loses function styles on web. */}
+                  <View style={{ width: 56, height: 56, alignItems: "center", justifyContent: "center", borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+                    <Text style={{ fontFamily: fonts.serif, fontSize: 22 }}>{chapter}</Text>
+                  </View>
                 </Pressable>
               </Link>
             ))}

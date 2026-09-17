@@ -42,7 +42,7 @@ export function SiteFooter() {
           <Wordmark size="xl" className="-mb-[0.18em] text-foreground/90" />
         </div>
         <div className="mt-6 flex flex-col gap-2 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>Scripture from the King James Version. Hymns from Sacred Songs and Solos. Both public domain.</p>
+          <p>Scripture and hymn texts are public domain, openly licensed or used by permission. <Link href="/legal/copyright" className="underline underline-offset-4 hover:text-foreground">Credits</Link></p>
           <p>© {new Date().getFullYear()} Scriptune</p>
         </div>
       </div>

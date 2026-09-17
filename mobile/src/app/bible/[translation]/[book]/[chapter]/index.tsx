@@ -4,11 +4,11 @@ import { Link, Stack, router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { TranslationNotice, TranslationSwitcher } from "@/components/bible";
-import { Button, Notice, Screen, Text } from "@/components/ui";
+import { Button, Notice, ReadingText, Screen, Text } from "@/components/ui";
 import { bible } from "@/lib/api";
 import { readLocalChapter } from "@/lib/offline";
 import { keys } from "@/lib/query";
-import { fonts, spacing } from "@/theme";
+import { spacing } from "@/theme";
 
 /** A chapter, verse by verse. Scroll to the verse you want; tap it for context, saving and notes. */
 export default function ChapterScreen() {
@@ -31,9 +31,12 @@ export default function ChapterScreen() {
           <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
             {data.data.verses.map((verse) => (
               <Link key={verse.verse} href={{ pathname: "/bible/[translation]/[book]/[chapter]/[verse]", params: { translation: params.translation, book: book.slug, chapter: String(chapter), verse: String(verse.verse) } }} asChild>
-                <Pressable style={({ pressed }) => ({ flexDirection: "row", gap: spacing.sm, opacity: pressed ? 0.7 : 1 })}>
-                  <Text variant="muted" style={{ width: 28, textAlign: "right", fontSize: 12, lineHeight: 30, fontVariant: ["tabular-nums"] }}>{verse.verse}</Text>
-                  <Text style={{ flex: 1, fontFamily: fonts.serif, fontSize: 19, lineHeight: 30 }}>{verse.text}</Text>
+                <Pressable accessibilityRole="link" accessibilityLabel={`Verse ${verse.verse}. ${verse.text}`} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                  {/* Layout lives on this View: a Pressable inside Link asChild loses function styles on web. */}
+                  <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                    <Text variant="muted" style={{ width: 28, textAlign: "right", fontSize: 12, lineHeight: 30, fontVariant: ["tabular-nums"] }}>{verse.verse}</Text>
+                    <ReadingText style={{ flex: 1 }}>{verse.text}</ReadingText>
+                  </View>
                 </Pressable>
               </Link>
             ))}
@@ -44,7 +47,7 @@ export default function ChapterScreen() {
             ) : <View />}
             <Link href={{ pathname: "/bible/[translation]/[book]", params: { translation: params.translation, book: book.slug } }} asChild><Button label="Chapters" icon={LayoutGrid} variant="ghost" /></Link>
             {chapter < book.chapterCount ? (
-              <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter + 1) } }} asChild replace><Button label={String(chapter + 1)} accessibilityLabel={`Chapter ${chapter + 1}`} icon={ChevronRight} variant="outline" /></Link>
+              <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter + 1) } }} asChild replace><Button label={String(chapter + 1)} accessibilityLabel={`Chapter ${chapter + 1}`} icon={ChevronRight} iconSide="trailing" variant="outline" /></Link>
             ) : <View />}
           </View>
           <TranslationNotice translation={data.data.translation} />

@@ -5,11 +5,11 @@ import { Pressable, View } from "react-native";
 import { ShareButton } from "@/components/common";
 import { HymnBoard } from "@/components/hymns";
 import { AddToCollectionButton, NoteEditor, SaveButton } from "@/components/library";
-import { Notice, Screen, Text } from "@/components/ui";
+import { Notice, ReadingText, Screen, Text } from "@/components/ui";
 import { hymns } from "@/lib/api";
-import { readLocalHymn } from "@/lib/offline";
+import { readLocalHymn, useIsOnline } from "@/lib/offline";
 import { keys } from "@/lib/query";
-import { fonts, radius, spacing, useColors } from "@/theme";
+import { radius, spacing, useColors } from "@/theme";
 
 const LANGUAGE_NAMES: Record<string, string> = { en: "English", yo: "Yorùbá", ig: "Igbo", ha: "Hausa", fr: "Français" };
 
@@ -18,6 +18,9 @@ export default function HymnScreen() {
   const colors = useColors();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const hymn = useQuery({ queryKey: keys.hymn(slug), queryFn: async () => (await readLocalHymn(slug)) ?? hymns.get(slug) });
+  const online = useIsOnline();
+  // An extra that needs the network; the hymn itself reads from the device when it is there.
+  const related = useQuery({ queryKey: keys.relatedHymns(slug), queryFn: () => hymns.related(slug), enabled: online, staleTime: 24 * 60 * 60 * 1000 });
   const [language, setLanguage] = useState<string | null>(null);
   const texts = hymn.data?.texts ?? [];
   const ordered = [...texts].sort((a, b) => (a.language === "en" ? -1 : b.language === "en" ? 1 : 0));
@@ -60,7 +63,7 @@ export default function HymnScreen() {
               <Text variant="muted" style={{ width: 24, textAlign: "right", fontVariant: ["tabular-nums"] }}>{stanza.kind === "chorus" ? "" : stanza.number}</Text>
               <View style={{ flex: 1 }}>
                 {stanza.kind === "chorus" && <Text variant="eyebrow">Chorus</Text>}
-                {stanza.lines.map((line, lineIndex) => <Text key={lineIndex} style={{ fontFamily: fonts.serif, fontSize: 19, lineHeight: 30 }}>{line}</Text>)}
+                {stanza.lines.map((line, lineIndex) => <ReadingText key={lineIndex}>{line}</ReadingText>)}
               </View>
             </View>
           ))}
@@ -74,6 +77,23 @@ export default function HymnScreen() {
                       <View style={{ paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: colors.border, gap: 2 }}>
                         <Text variant="title" style={{ fontSize: 17 }}>{reference.reference}</Text>
                         {reference.note !== undefined && <Text variant="muted" style={{ fontSize: 13 }}>{reference.note}</Text>}
+                      </View>
+                    </Pressable>
+                  </Link>
+                ))}
+              </View>
+            </View>
+          )}
+          {related.data !== undefined && related.data.related.length > 0 && (
+            <View style={{ gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md }}>
+              <Text variant="eyebrow">Sing next</Text>
+              <View style={{ borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: "hidden" }}>
+                {related.data.related.map((entry, index) => (
+                  <Link key={entry.slug} href={{ pathname: "/hymns/[slug]", params: { slug: entry.slug } }} asChild>
+                    <Pressable accessibilityRole="link" style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                      <View style={{ paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: colors.border, gap: 2 }}>
+                        <Text variant="title" style={{ fontSize: 17 }} numberOfLines={2}>{entry.title}</Text>
+                        <Text variant="muted" style={{ fontSize: 13 }}>{entry.reason}</Text>
                       </View>
                     </Pressable>
                   </Link>
