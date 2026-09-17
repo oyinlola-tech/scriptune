@@ -65,7 +65,10 @@ else lives in the layer folders zudojs-cli generates: `configs/`, `constants/`, 
 Chapter is a number on `Verse`, not a table. Nothing in v1 needs chapter-level attributes and a
 chapter table would double the join depth of every verse lookup. Adding one later is additive.
 
-- `CrossReference` (v1.5, optional) — from/to verse keys and weight, for "related scriptures".
+- `CrossReference` — from a verse to a passage, with the votes readers gave the link. Shared by every
+  translation, so the text of a linked passage is read from whichever translation is open. Imported
+  from OpenBible.info (CC BY 4.0) by `import:xrefs`, about 250,000 rows. The primary key leads with
+  the source verse, so reading a verse's links is one index range scan.
 
 ### Hymns
 
@@ -77,7 +80,13 @@ chapter table would double the join depth of every verse lookup. Adding one late
 - `Hymnal` — slug, title, edition, year, publisher, rightsStatus, sourceId.
 - `HymnalEntry` — hymnalId, hymnId, number, section. Custom church numbering later becomes a hymnal owned by an organization.
 - `Topic` and `HymnTopic`.
-- `HymnScriptureReference` — hymnId, bookId, chapter, verseStart, verseEnd. This is the hymn ↔ scripture link in both directions.
+- `HymnRelation` — hymn to hymn, with a score and the reason the two are paired. Worked out ahead of
+  time by `link:hymns`, which compares the words (terms weighted by how rare they are in the hymnal)
+  and adds a bonus for shared scripture, so a request reads a few rows instead of comparing anything.
+- `HymnScriptureReference` — hymnId, bookId, chapter, verseStart, verseEnd, origin. This is the hymn ↔
+  scripture link in both directions. `origin` is `editorial` for links a hymnal file states and
+  `matched` for those `link:scriptures` finds by looking for runs of words a hymn shares with the
+  King James Version, scored by how rare those words are, so a stock phrase does not count as a quotation.
 
 ### Identity
 
@@ -148,7 +157,7 @@ GET  /bible/:translation/:book/:chapter/:verse?context=2
 GET  /bible/:translation/:book/:chapter/:verse/related        (hymns referencing this verse)
 GET  /bible/:translation/search?q=&limit=                     (verse search owned by the bible module)
 GET  /hymns?hymnal=&topic=&language=&page=&limit=          GET /hymns/search?q=&limit=&language=
-GET  /hymns/:slug                  GET /hymns/:slug/related   (related: later, needs topic/scripture data)
+GET  /hymns/:slug                  GET /hymns/:slug/related   (paired ahead of time by link:hymns)
 GET  /hymnals                      GET /hymnals/:slug           GET /hymnals/:slug/:number
 GET  /topics
 ```

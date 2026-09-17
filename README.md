@@ -44,7 +44,7 @@ discarded once they are transcribed; only the words and the matches are kept, as
     <td align="center"><b>1 · Listen</b><br><sub>Tap the microphone for up to fifteen seconds, or type the words you remember.</sub></td>
     <td align="center"><b>2 · Match</b><br><sub>The words are searched across every translation and hymnal, and ranked by how sure the match is.</sub></td>
     <td align="center"><b>3 · Open</b><br><sub>Every stanza, the author, and the number to put on the hymn board.</sub></td>
-    <td align="center"><b>4 · Read on</b><br><sub>The verse in its chapter, in six translations, with the hymns that draw on it.</sub></td>
+    <td align="center"><b>4 · Read on</b><br><sub>The verse in its chapter, in any translation, with the related passages and the hymns that draw on it.</sub></td>
   </tr>
 </table>
 
@@ -73,9 +73,12 @@ do fuzzy work it does not need.
 | | |
 | --- | --- |
 | 🎤 **Identify by ear** | Sung, spoken or typed. Whisper detects the language of each recording, so English and Yoruba both work without a setting. |
-| 📖 **Six Bible translations** | KJV, AKJV, ASV, WEB, WEBC and Douay-Rheims, including the deuterocanonical books. A match names the translation it came from. |
-| 🎵 **Hymns and hymnals** | 1,200 public-domain hymns from *Sacred Songs and Solos*. Browse a hymnal or jump straight to a number. Any other hymnal imports from a JSON file that states its own rights. |
-| 🔗 **Connected both ways** | A hymn lists the scriptures behind it, and a verse lists the hymns that draw on it. |
+| 📖 **Seven Bible translations** | KJV, AKJV, ASV, WEB, WEBC and Douay-Rheims in English, with the deuterocanonical books, and the Yoruba Contemporary Bible. A match names the translation it came from, and a Yoruba book keeps its Yoruba name. |
+| 🎵 **Hymns and hymnals** | 1,200 public-domain hymns from *Sacred Songs and Solos*. Browse a hymnal or jump straight to a number. Any other hymnal, in any language, imports from a JSON file that states its own rights. |
+| 🔗 **Connected both ways** | A hymn lists the scripture it quotes, and a verse lists the hymns that draw on it. Both are worked out by comparing the words, not entered by hand. |
+| 📜 **Related scriptures** | Every verse carries the passages that speak to it, from 250,000 cross-references, each shown in the translation you are reading. |
+| 🎼 **Sing next** | Each hymn points to the hymns most like it, paired by wording and by shared scripture. |
+| 🔠 **Reading size** | Four sizes for the words of a hymn or a verse, so the text can be read at arm's length in a pew without enlarging the whole interface. |
 | 🔎 **One search for everything** | A phrase, a reference or a first line searches verses and hymns together. |
 | ✈️ **Works offline** | Download translations and hymnals to the phone for reading, search and typed identification. Add the 60 MB listening model and the microphone works with no signal too. |
 | 📚 **Personal library** | Saved hymns and verses, collections, notes and history. Guests keep history on the device, and it moves into the account on sign-in. |
@@ -189,8 +192,11 @@ npm run db:migrate        # applies prisma/migrations
 
 # 3. Load the texts (once; downloads the pinned public-domain datasets)
 cd api
-npm run import:bible -- --all   # KJV, AKJV, ASV, WEB, WEBC, DRC; or --translation WEB for one
+npm run import:bible -- --all   # KJV, AKJV, ASV, WEB, WEBC, DRC, YCB; or --translation YCB for one
 npm run import:hymns            # Sacred Songs and Solos, 1,200 hymns
+npm run import:xrefs            # 250,000 cross-references between verses (OpenBible.info)
+npm run link:scriptures         # find where the hymns quote scripture
+npm run link:hymns              # pair each hymn with the hymns most like it
 cd ..
 
 # 4. Run everything
@@ -284,8 +290,10 @@ the rules they keep to are in [mobile/store-assets/](mobile/store-assets/).
 
 ## 📚 Texts and hymnals
 
-The scripture and hymn texts that ship with Scriptune are public domain. Importers live in
-`api/src/jobs/`, and the app never fetches datasets at runtime.
+Most of the texts that ship with Scriptune are public domain. Two are openly licensed and carry
+their notice wherever they are read: the Yoruba Contemporary Bible (Biblica, CC BY-SA 4.0) and the
+cross-references between verses (OpenBible.info, CC BY 4.0). Importers live in `api/src/jobs/`,
+and the app never fetches datasets at runtime.
 
 Any other hymnal, including bilingual ones and collections used by permission, imports from a JSON file:
 
@@ -378,9 +386,10 @@ Scriptune is free and open source.
 
 ## 📄 Licence
 
-The Scriptune source code is released under the [MIT Licence](LICENSE). The scripture and hymn
-texts it ships with are public domain and are credited on the Licences page of the site and app.
-Hymnals imported by permission keep the rights status their import file declares.
+The Scriptune source code is released under the [MIT Licence](LICENSE). The texts it serves are
+public domain, openly licensed or used by permission, and each is credited on the Copyright page of
+the site and app; an openly licensed text carries its notice beside the words themselves. Hymnals
+imported by permission keep the rights status their import file declares.
 
 <div align="center">
 <br>
