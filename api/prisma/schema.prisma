@@ -69,6 +69,8 @@ model TranslationBook {
   bookId        Int         @map("book_id")
   chapterCount  Int         @map("chapter_count")
   verseCount    Int         @map("verse_count")
+  /// The book's name in the translation's own language ("Saamu"); null where the English name serves.
+  localName     String?     @map("local_name")
   translation   Translation @relation(fields: [translationId], references: [id], onDelete: Cascade)
   book          Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
@@ -76,7 +78,7 @@ model TranslationBook {
   @@map("bible_translation_books")
 }
 
-/// One verse of one translation. `search_vector` is a generated tsvector column.
+/// One verse of one translation. `search_vector` is a generated tsvector column over the accent-folded text.
 model Verse {
   id             Int                      @id @default(autoincrement())
   translationId  String                   @map("translation_id") @db.Uuid
@@ -85,7 +87,7 @@ model Verse {
   verse          Int
   text           String
   normalizedText String                   @map("normalized_text")
-  searchVector   Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, text)")) @map("search_vector")
+  searchVector   Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, scriptune_fold(text))")) @map("search_vector")
   translation    Translation              @relation(fields: [translationId], references: [id], onDelete: Cascade)
   book           Book                     @relation(fields: [bookId], references: [id])
 
@@ -162,7 +164,7 @@ model HymnText {
   firstLine           String                   @map("first_line")
   normalizedLyrics    String                   @map("normalized_lyrics")
   normalizedFirstLine String                   @map("normalized_first_line")
-  searchVector        Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, ((title || ' '::text) || lyrics))")) @map("search_vector")
+  searchVector        Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, scriptune_fold(((title || ' '::text) || lyrics)))")) @map("search_vector")
   rightsStatus        String                   @map("rights_status")
   sourceId            String?                  @map("source_id") @db.Uuid
   hymn                Hymn                     @relation(fields: [hymnId], references: [id], onDelete: Cascade)
