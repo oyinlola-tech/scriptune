@@ -34,13 +34,13 @@ export default function ChapterScreen() {
               </Link>
             ))}
           </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: spacing.lg, gap: spacing.sm }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", marginTop: spacing.lg, gap: spacing.sm }}>
             {chapter > 1 ? (
-              <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter - 1) } }} asChild replace><Button label={`Chapter ${chapter - 1}`} icon={ChevronLeft} variant="outline" /></Link>
+              <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter - 1) } }} asChild replace><Button label={String(chapter - 1)} accessibilityLabel={`Chapter ${chapter - 1}`} icon={ChevronLeft} variant="outline" /></Link>
             ) : <View />}
             <Link href={{ pathname: "/bible/[translation]/[book]", params: { translation: params.translation, book: book.slug } }} asChild><Button label="Chapters" icon={LayoutGrid} variant="ghost" /></Link>
             {chapter < book.chapterCount ? (
-              <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter + 1) } }} asChild replace><Button label={`Chapter ${chapter + 1}`} icon={ChevronRight} variant="outline" /></Link>
+              <Link href={{ pathname: "/bible/[translation]/[book]/[chapter]", params: { translation: params.translation, book: book.slug, chapter: String(chapter + 1) } }} asChild replace><Button label={String(chapter + 1)} accessibilityLabel={`Chapter ${chapter + 1}`} icon={ChevronRight} variant="outline" /></Link>
             ) : <View />}
           </View>
         </>
