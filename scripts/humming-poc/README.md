@@ -41,6 +41,12 @@ non-matches, but relative scores can (AUC, 0.5 = coin flip, 1.0 = perfect):
 | z (median minus #1, over MAD) | 0.92 | 31% wrong, 10% none shown |
 | margin >= 0.05 and z >= 2.45 | - | 81% kept, 0% wrong, 8% none shown |
 
+`evaluate.py` applies a confidence rule (default `--margin 0.05 --z 2.45`) and
+labels every hum CORRECT ACCEPT, FALSE REJECT, WRONG ACCEPT, WRONG REJECT,
+NONE ACCEPT or NONE REJECT. The product number is **precision when confident**
+(correct accepts / everything shown): 85% (22 of 26) on the synthetic set, with
+81% of right answers kept. It also breaks results down by voiced duration.
+
 Thresholds were picked on the same hums they were scored on, so treat them as
 optimistic until checked on real recordings. Short hums are the main weakness:
 top-1 is about 50% under 8 s of voiced audio and 83% at 12 s or more.
