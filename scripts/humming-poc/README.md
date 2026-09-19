@@ -28,7 +28,11 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
 Synthetic baseline (40 hums, 8-16 notes, random key/tempo/wobble/noise):
-**top-1 68%, top-5 90%, ~2.3 s per hum** on CPU. Real hums will score lower.
+**top-1 68%, top-3 80%, top-5 90%, ~2 s per hum** on CPU. Real hums will score lower.
+
+`synth_hums.py --none 15` adds made-up tunes not in the index. On those, the raw
+DTW cost does **not** separate real matches from non-matches (medians 0.32 vs
+0.36), so a plain cost threshold can't say "no confident match" yet.
 
 ## Recording real hums (the number that matters)
 
@@ -42,6 +46,9 @@ Put phone recordings in `hums/` (git-ignored), named after the hymn:
 - 10-20 seconds each, any key, any speed; start wherever you like.
 - "mmm" or "da da da" both work. A quiet room helps but isn't required.
 - Several people and several hymns beat many takes of one hymn.
+- Also record 5-10 hums of tunes **not** in the index (a hymn without sol-fa,
+  a pop song, random humming) and name them `none__<anything>.wav`. These
+  measure false positives.
 - Only hymns in `data/melodies.json` can be matched (`grep '"number": 50,'`).
 
 ## Known limits
