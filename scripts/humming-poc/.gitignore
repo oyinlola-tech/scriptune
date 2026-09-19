@@ -1,0 +1,4 @@
+.venv/
+data/
+hums/
+__pycache__/
