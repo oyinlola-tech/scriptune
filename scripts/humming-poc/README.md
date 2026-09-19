@@ -30,9 +30,20 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 Synthetic baseline (40 hums, 8-16 notes, random key/tempo/wobble/noise):
 **top-1 68%, top-3 80%, top-5 90%, ~2 s per hum** on CPU. Real hums will score lower.
 
-`synth_hums.py --none 15` adds made-up tunes not in the index. On those, the raw
-DTW cost does **not** separate real matches from non-matches (medians 0.32 vs
-0.36), so a plain cost threshold can't say "no confident match" yet.
+`synth_hums.py --none 40` adds made-up tunes that are not in the index. On those
+(40 real + 40 none, synthetic), the raw DTW cost can't tell matches from
+non-matches, but relative scores can (AUC, 0.5 = coin flip, 1.0 = perfect):
+
+| feature | AUC | at ~75% of right answers kept |
+|---|---|---|
+| raw cost | 0.55 | 92% of wrong answers and 50% of none hums still shown |
+| margin (#2 minus #1, different tunes) | 0.90 | 0% wrong, 10% none shown |
+| z (median minus #1, over MAD) | 0.92 | 31% wrong, 10% none shown |
+| margin >= 0.05 and z >= 2.45 | - | 81% kept, 0% wrong, 8% none shown |
+
+Thresholds were picked on the same hums they were scored on, so treat them as
+optimistic until checked on real recordings. Short hums are the main weakness:
+top-1 is about 50% under 8 s of voiced audio and 83% at 12 s or more.
 
 ## Recording real hums (the number that matters)
 
