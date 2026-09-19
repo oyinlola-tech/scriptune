@@ -50,6 +50,12 @@ class Matcher:
         return self.tune[tuple(p for p, _ in record["notes"])]
 
     def rank(self, query: np.ndarray, top: int = 5) -> list[tuple[dict, float]]:
+        best = self.scores(query)
+        order = np.argsort(best)[:top]
+        return [(self.records[k], float(best[k])) for k in order]
+
+    def scores(self, query: np.ndarray) -> np.ndarray:
+        """DTW cost of the query against every reference, in `self.records` order."""
         best = np.full(len(self.records), np.inf)
         for scale in TEMPO_SCALES:
             length = round(len(query) * FRAMES_PER_BEAT * NOMINAL_BPM / 60 / QUERY_FPS * scale)
@@ -59,8 +65,7 @@ class Matcher:
             resampled = resampled.astype(np.float32)
             for chunk, block in self.buckets:
                 best[chunk] = np.minimum(best[chunk], subsequence_dtw(resampled, block))
-        order = np.argsort(best)[:top]
-        return [(self.records[k], float(best[k])) for k in order]
+        return best
 
 
 def reference_frames(notes: list[list[float]]) -> np.ndarray:
