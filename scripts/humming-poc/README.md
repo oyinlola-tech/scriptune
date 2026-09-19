@@ -51,10 +51,32 @@ Thresholds were picked on the same hums they were scored on, so treat them as
 optimistic until checked on real recordings. Short hums are the main weakness:
 top-1 is about 50% under 8 s of voiced audio and 83% at 12 s or more.
 
+## Synthetic regression check
+
+The synthetic set is regenerated exactly from fixed seeds (the audio lives in
+git-ignored `data/synth/`). After any change, rebuild and compare with the
+baseline below; it answers "did I break the matcher?", not "does it work for
+people?".
+
+```bash
+rm -rf data/synth
+.venv/bin/python synth_hums.py --count 40             # seed 7: 40 indexed hums
+.venv/bin/python synth_hums.py --count 0 --none 40 --seed 11
+.venv/bin/python evaluate.py --quiet
+```
+
+Baseline (frozen matcher, `--margin 0.05 --z 2.45`):
+
+| top-1 | top-3 | top-5 | AUC cost / margin / z | shown | precision when confident | right kept | wrong shown | none shown |
+|---|---|---|---|---|---|---|---|---|
+| 68% | 80% | 90% | 0.55 / 0.90 / 0.92 | 26 | 85% (22/26) | 81% | 0 of 13 | 4 of 40 |
+
 ## Recording real hums (the number that matters)
 
-Put phone recordings in `hums/` (git-ignored), named after the hymn:
-`ccc-50__ade.m4a`, `ccc-50__tola.wav`, `ccc-1__ade.wav`. Then:
+Put phone recordings in `hums/` (git-ignored), named
+`<hymn id or none>__<person>[_anything].<ext>`: `ccc-50__ade.m4a`,
+`ccc-50__tola_2.wav`, `none__ade_popsong.m4a`. The person is only used for a
+per-person breakdown in the report; the matcher never sees the filename. Then:
 
 ```bash
 .venv/bin/python evaluate.py hums
@@ -64,8 +86,8 @@ Put phone recordings in `hums/` (git-ignored), named after the hymn:
 - "mmm" or "da da da" both work. A quiet room helps but isn't required.
 - Several people and several hymns beat many takes of one hymn.
 - Also record 5-10 hums of tunes **not** in the index (a hymn without sol-fa,
-  a pop song, random humming) and name them `none__<anything>.wav`. These
-  measure false positives.
+  a worship or pop song, random humming) and name them `none__<person>.wav`.
+  These measure false positives.
 - Only hymns in `data/melodies.json` can be matched (`grep '"number": 50,'`).
 
 ## Known limits
