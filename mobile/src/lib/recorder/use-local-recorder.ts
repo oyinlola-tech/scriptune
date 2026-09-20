@@ -41,6 +41,8 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
   // Refs, not state, guard re-entry: two taps in one frame both see the same state.
   const listening = useRef(false);
   const busy = useRef(false);
+  // Set when a clip is called off while the microphone is still being started.
+  const abandoned = useRef(false);
   const subscription = useRef<EmitterSubscription | null>(null);
 
   const clearTimer = () => {
@@ -103,8 +105,13 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
     }
   }, [invalidateModel, onError, onTranscript]);
 
+  /** Milliseconds of audio captured so far; zero when nothing is being recorded. */
+  const heardMs = useCallback(() => (listening.current ? Date.now() - startedAt.current : 0), []);
+
   /** Ends the capture without transcribing: for a hold too short to have heard anything. */
   const cancel = useCallback(() => {
+    // Let go before the microphone was ready: tell `start` below to drop it.
+    abandoned.current = true;
     if (busy.current) return;
     abandon();
     setLevel(null);
@@ -115,6 +122,7 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
   const start = useCallback(async () => {
     if (listening.current || busy.current) return;
     busy.current = true;
+    abandoned.current = false;
     setStatus("requesting");
     try {
       const permission = await requestRecordingPermissionsAsync();
@@ -122,9 +130,17 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
         setStatus("denied");
         return;
       }
+      // Each step below waits, and the finger may come off meanwhile; check
+      // after every one so an abandoned clip never reaches the microphone.
+      if (abandoned.current) { setStatus("idle"); return; }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       const sinceStop = Date.now() - stoppedAt.current;
       if (sinceStop < RESTART_GAP_MS) await wait(RESTART_GAP_MS - sinceStop);
+      if (abandoned.current) {
+        await setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+        setStatus("idle");
+        return;
+      }
       await LiveAudioStream.init({ sampleRate: SAMPLE_RATE, channels: 1, bitsPerSample: 16, audioSource: 6, bufferSize: 4096, wavFile: "" });
       frames.current = [];
       samples.current = 0;
@@ -151,6 +167,13 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
         const rms = Math.sqrt(sum / Math.max(1, count)) / 32768;
         setLevel(Math.round(20 * Math.log10(Math.max(rms, 1e-4))));
       });
+      if (abandoned.current) {
+        subscription.current?.remove();
+        subscription.current = null;
+        await setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+        setStatus("idle");
+        return;
+      }
       listening.current = true;
       startedAt.current = Date.now();
       setElapsedMs(0);
@@ -186,5 +209,5 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
 
   useEffect(() => () => abandon(), [abandon]);
 
-  return { status, start, stop, cancel, elapsedMs, level };
+  return { status, start, stop, cancel, heardMs, elapsedMs, level };
 }

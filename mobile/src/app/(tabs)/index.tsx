@@ -118,10 +118,10 @@ export default function IdentifyScreen() {
       </View>
       <View style={{ marginVertical: spacing.lg }}>
         {path === "server" ? (
-          <ListenButton status={recorder.status} onStart={startListening} onStop={() => void recorder.stop()} onCancel={() => void recorder.cancel()} onHoldChange={setHolding} />
+          <ListenButton status={recorder.status} heardMs={recorder.heardMs} onStart={startListening} onStop={() => void recorder.stop()} onCancel={() => void recorder.cancel()} onHoldChange={setHolding} />
         ) : path === "device" ? (
           <View style={{ gap: spacing.sm }}>
-            <ListenButton status={localRecorder.status} onStart={startListening} onStop={() => void localRecorder.stop()} onCancel={() => localRecorder.cancel()} onHoldChange={setHolding} />
+            <ListenButton status={localRecorder.status} heardMs={localRecorder.heardMs} onStart={startListening} onStop={() => void localRecorder.stop()} onCancel={() => localRecorder.cancel()} onHoldChange={setHolding} />
             <Text variant="muted" style={{ textAlign: "center", fontSize: 13 }}>Offline: listening on this device{hasAny ? "" : ". Download the words too, so there is something to match."}</Text>
           </View>
         ) : (

@@ -18,7 +18,7 @@ const HINT_MS = 4_000;
  * clip that started on its own (widget, shortcut, or listen on opening) has no
  * finger on it, so a tap ends that one.
  */
-export function ListenButton({ status, onStart, onStop, onCancel, onHoldChange }: { status: RecorderStatus; onStart: () => void; onStop: () => void; onCancel: () => void; /** True while a finger is on the disc, so the page can hold still under it. */ onHoldChange?: (holding: boolean) => void }) {
+export function ListenButton({ status, heardMs, onStart, onStop, onCancel, onHoldChange }: { status: RecorderStatus; /** How much audio the recorder has captured so far. */ heardMs: () => number; onStart: () => void; onStop: () => void; onCancel: () => void; /** True while a finger is on the disc, so the page can hold still under it. */ onHoldChange?: (holding: boolean) => void }) {
   const colors = useColors();
   const recording = status === "recording";
   const busy = status === "requesting" || status === "processing";
@@ -35,9 +35,9 @@ export function ListenButton({ status, onStart, onStop, onCancel, onHoldChange }
     return () => { alive = false; subscription.remove(); };
   }, []);
 
-  // The finger currently on the disc. A ref for the decisions (a release can
-  // land in the same frame as the press), mirrored into state for the label.
-  const hold = useRef<{ at: number; released: boolean } | null>(null);
+  // True while a finger is on the disc. A ref for the decisions, since a release
+  // can land in the same frame as the press; mirrored into state for the label.
+  const hold = useRef(false);
   const [holding, setHoldingState] = useState(false);
   const [tooShort, setTooShort] = useState(false);
   const holdChanged = useRef(onHoldChange);
@@ -53,65 +53,40 @@ export function ListenButton({ status, onStart, onStop, onCancel, onHoldChange }
     return () => clearTimeout(timer);
   }, [tooShort]);
 
-  const endHold = useCallback((at: number) => {
-    hold.current = null;
-    setHolding(false);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (Date.now() - at < MIN_HOLD_MS) {
-      setTooShort(true);
-      onCancel();
-    } else {
-      onStop();
-    }
-  }, [onCancel, onStop, setHolding]);
-
   const release = useCallback(() => {
-    const held = hold.current;
-    if (held === null || held.released) return;
-    // Still asking for the microphone, or already finished on its own: remember
-    // the release and settle it below, once the recorder has landed somewhere.
-    if (status !== "recording") {
-      held.released = true;
+    if (!hold.current) return;
+    hold.current = false;
+    setHolding(false);
+    if (status === "recording") {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Measured on the recorder, not from the press: asking for permission and
+      // preparing takes a moment, and it is the length of the recording that
+      // decides whether there is anything worth sending.
+      if (heardMs() < MIN_HOLD_MS) { setTooShort(true); onCancel(); } else onStop();
       return;
     }
-    endHold(held.at);
-  }, [endHold, status]);
-
-  // Settles a hold whenever the recorder moves on: only a real change counts,
-  // since the callbacks below are fresh on every render of the screen.
-  const settled = useRef(status);
-  useEffect(() => {
-    if (settled.current === status) return;
-    settled.current = status;
-    const held = hold.current;
-    if (held === null) return;
-    if (held.released) {
-      // The finger came off while the microphone was still starting.
-      if (status === "recording") endHold(held.at);
-      else if (status !== "requesting") { hold.current = null; setHolding(false); }
-      return;
-    }
-    // Still held, but the clip ended on its own: the fifteen-second cap, or a
-    // refused microphone. The disc is disabled then and will send no release.
-    if (status === "processing" || status === "idle" || status === "denied") {
-      hold.current = null;
-      setHolding(false);
-    }
-  }, [endHold, setHolding, status]);
+    // Let go before the microphone was ready: nothing was heard, and the
+    // recorder drops the clip it is still starting.
+    if (status === "requesting") { setTooShort(true); onCancel(); return; }
+    // Anything else (the fifteen-second cap, a refused microphone) the recorder
+    // has already settled on its own; this release has nothing left to do.
+  }, [heardMs, onCancel, onStop, status, setHolding]);
 
   const press = () => {
-    if (busy) return;
+    // A second finger, or a press while the last clip is still being identified.
+    if (hold.current || status === "processing") return;
     if (screenReader) {
       if (recording) onStop(); else onStart();
       return;
     }
     if (recording) {
-      // Started without a finger on it; this tap ends it.
-      if (hold.current === null) onStop();
+      // Listening with no finger on it (the widget, a shortcut, or listening on
+      // opening): this tap ends that one.
+      onStop();
       return;
     }
     setTooShort(false);
-    hold.current = { at: Date.now(), released: false };
+    hold.current = true;
     setHolding(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onStart();
@@ -150,9 +125,13 @@ export function ListenButton({ status, onStart, onStop, onCancel, onHoldChange }
             accessibilityHint={screenReader ? undefined : "Hold the button while the music plays, then let go."}
             onPressIn={press}
             onPressOut={release}
+            // A release the pressable cannot report, such as the clip ending at the
+            // fifteen-second cap with the finger still down. Releasing twice is harmless.
+            onTouchEnd={release}
+            onTouchCancel={release}
             // Keep the hold alive when the finger wanders off the disc a little.
             pressRetentionOffset={{ top: 60, bottom: 60, left: 60, right: 60 }}
-            disabled={busy}
+            disabled={status === "processing"}
             style={({ pressed }) => ({ width: 168, height: 168, borderRadius: 84, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.85 : busy ? 0.6 : 1 })}
           >
             {busy ? <ActivityIndicator size="large" color={colors.background} /> : recording ? <Square size={44} color={colors.background} fill={colors.background} /> : <Mic size={56} color={colors.background} strokeWidth={1.75} />}
