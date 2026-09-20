@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Page, PageHeading } from "@/components/layout/page";
 import { RequireMember } from "@/components/library/require-member";
 import { TargetLink } from "@/components/library/target-link";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -94,7 +94,7 @@ export default function LibraryPage() {
   return (
     <Page>
       <RequireMember returnTo="/library">
-        <PageHeading eyebrow="Library" title="What you keep" actions={<Button variant="outline" className="rounded-full" render={<Link href="/library/history" />}>History</Button>} />
+        <PageHeading eyebrow="Library" title="What you keep" actions={<ButtonLink variant="outline" className="rounded-full" href="/library/history">History</ButtonLink>} />
         <Tabs defaultValue="saved">
           <TabsList className="mb-6 rounded-full"><TabsTrigger value="saved">Saved</TabsTrigger><TabsTrigger value="collections">Collections</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger></TabsList>
           <TabsContent value="saved"><Saved /></TabsContent>

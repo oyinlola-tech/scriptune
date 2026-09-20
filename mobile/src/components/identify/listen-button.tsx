@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Mic, Square } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, ActivityIndicator, Pressable, View } from "react-native";
+import { AccessibilityInfo, ActivityIndicator, View } from "react-native";
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { Text } from "@/components/ui";
 import { useColors } from "@/theme";
@@ -119,23 +119,26 @@ export function ListenButton({ status, heardMs, onStart, onStop, onCancel, onHol
       <View style={{ width: 232, height: 232, alignItems: "center", justifyContent: "center" }}>
         <Animated.View style={[{ position: "absolute", width: 232, height: 232, borderRadius: 116, borderWidth: 6, borderColor: colors.gold, borderStyle: "dashed", opacity: recording ? 1 : 0.45 }, ringStyle]} />
         <Animated.View style={discStyle}>
-          <Pressable
+          <View
+            accessible
             accessibilityRole="button"
             accessibilityLabel={action}
             accessibilityHint={screenReader ? undefined : "Hold the button while the music plays, then let go."}
-            onPressIn={press}
-            onPressOut={release}
-            // A release the pressable cannot report, such as the clip ending at the
-            // fifteen-second cap with the finger still down. Releasing twice is harmless.
-            onTouchEnd={release}
-            onTouchCancel={release}
-            // Keep the hold alive when the finger wanders off the disc a little.
-            pressRetentionOffset={{ top: 60, bottom: 60, left: 60, right: 60 }}
-            disabled={status === "processing"}
-            style={({ pressed }) => ({ width: 168, height: 168, borderRadius: 84, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.85 : busy ? 0.6 : 1 })}
+            onAccessibilityTap={() => { if (recording) onStop(); else if (status !== "processing") onStart(); }}
+            // The responder system, not Pressable: only this way can the disc
+            // refuse to hand the touch to the page under it. A Pressable loses a
+            // held finger to the ScrollView at the first pixel of drag, which
+            // scrolls the page and cuts the clip before it has heard anything.
+            onStartShouldSetResponder={() => status !== "processing"}
+            onMoveShouldSetResponder={() => false}
+            onResponderTerminationRequest={() => false}
+            onResponderGrant={press}
+            onResponderRelease={release}
+            onResponderTerminate={release}
+            style={{ width: 168, height: 168, borderRadius: 84, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", opacity: holding ? 0.85 : busy ? 0.6 : 1 }}
           >
             {busy ? <ActivityIndicator size="large" color={colors.background} /> : recording ? <Square size={44} color={colors.background} fill={colors.background} /> : <Mic size={56} color={colors.background} strokeWidth={1.75} />}
-          </Pressable>
+          </View>
         </Animated.View>
       </View>
       <Text variant="muted" style={{ textAlign: "center", color: recording ? colors.gold : colors.muted, maxWidth: 260 }}>{label}</Text>

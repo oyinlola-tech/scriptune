@@ -1,8 +1,7 @@
 "use client";
 
 import { RotateCcw, Search } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import type { RecognitionResultDto } from "@/lib/api";
 import { CandidateCard } from "./candidate-card";
 
@@ -35,11 +34,11 @@ export function ResultView({ result, onReset }: { result: RecognitionResultDto; 
         {onReset ? (
           <Button variant="outline" className="rounded-full" onClick={onReset}><RotateCcw data-icon="inline-start" /> Listen again</Button>
         ) : (
-          <Button variant="outline" className="rounded-full" render={<Link href="/" />}><RotateCcw data-icon="inline-start" /> Identify another</Button>
+          <ButtonLink variant="outline" className="rounded-full" href="/"><RotateCcw data-icon="inline-start" /> Identify another</ButtonLink>
         )}
-        <Button variant="ghost" className="rounded-full" render={<Link href={`/search?q=${encodeURIComponent(result.transcript)}`} />}>
+        <ButtonLink variant="ghost" className="rounded-full" href={`/search?q=${encodeURIComponent(result.transcript)}`}>
           <Search data-icon="inline-start" /> Search these words
-        </Button>
+        </ButtonLink>
       </div>
     </section>
   );
