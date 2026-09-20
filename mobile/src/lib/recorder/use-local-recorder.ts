@@ -103,6 +103,15 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
     }
   }, [invalidateModel, onError, onTranscript]);
 
+  /** Ends the capture without transcribing: for a hold too short to have heard anything. */
+  const cancel = useCallback(() => {
+    if (busy.current) return;
+    abandon();
+    setLevel(null);
+    setStatus("idle");
+    void setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+  }, [abandon]);
+
   const start = useCallback(async () => {
     if (listening.current || busy.current) return;
     busy.current = true;
@@ -177,5 +186,5 @@ export function useLocalRecorder(onTranscript: (transcript: LocalTranscript) => 
 
   useEffect(() => () => abandon(), [abandon]);
 
-  return { status, start, stop, elapsedMs, level };
+  return { status, start, stop, cancel, elapsedMs, level };
 }

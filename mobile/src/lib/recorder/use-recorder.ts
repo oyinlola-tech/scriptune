@@ -40,6 +40,20 @@ export function useRecorder(onClip: (file: { uri: string; name: string; type: st
     }
   }, [onClip, recorder]);
 
+  /** Ends the clip without sending it: for a hold too short to have heard anything. */
+  const cancel = useCallback(async () => {
+    clearTimer();
+    try {
+      await recorder.stop();
+    } catch {
+      // Nothing was recording; the file cleanup below still runs.
+    } finally {
+      const uri = recorder.uri;
+      if (uri !== null) await deleteAsync(uri, { idempotent: true }).catch(() => undefined);
+      setStatus("idle");
+    }
+  }, [recorder]);
+
   const start = useCallback(async () => {
     // Ignore taps while a clip is being requested, recorded or uploaded.
     if (status === "recording" || status === "requesting" || status === "processing") return;
@@ -66,5 +80,5 @@ export function useRecorder(onClip: (file: { uri: string; name: string; type: st
     void recorder.stop().catch(() => undefined);
   }, [recorder]);
 
-  return { status, start, stop, elapsedMs: state.durationMillis, level: state.metering ?? null };
+  return { status, start, stop, cancel, elapsedMs: state.durationMillis, level: state.metering ?? null };
 }

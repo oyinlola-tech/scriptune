@@ -61,6 +61,9 @@ export default function IdentifyScreen() {
   const [active, setActive] = useState<"server" | "device" | null>(null);
   const stillRunning = (active === "server" && recorder.status !== "idle") || (active === "device" && localRecorder.status !== "idle");
   const path = stillRunning ? active : online ? "server" : hasModel ? "device" : null;
+  // While a finger is held on the disc, the page stops scrolling: a small drag
+  // would otherwise hand the gesture to the ScrollView and cut the clip short.
+  const [holding, setHolding] = useState(false);
   const startListening = () => {
     if (path === "server") { setActive("server"); void recorder.start(); }
     else if (path === "device") { setActive("device"); void localRecorder.start(); }
@@ -107,7 +110,7 @@ export default function IdentifyScreen() {
   }, [autoListen]);
 
   return (
-    <Screen scrollRef={scrollRef}>
+    <Screen scrollRef={scrollRef} scrollEnabled={!holding}>
       <View style={{ alignItems: "center", gap: spacing.sm, marginTop: spacing.lg }}>
         <Text variant="eyebrow">Scriptune</Text>
         <Text variant="display" style={{ textAlign: "center" }}>What are you looking for?</Text>
@@ -115,10 +118,10 @@ export default function IdentifyScreen() {
       </View>
       <View style={{ marginVertical: spacing.lg }}>
         {path === "server" ? (
-          <ListenButton status={recorder.status} onStart={startListening} onStop={() => void recorder.stop()} />
+          <ListenButton status={recorder.status} onStart={startListening} onStop={() => void recorder.stop()} onCancel={() => void recorder.cancel()} onHoldChange={setHolding} />
         ) : path === "device" ? (
           <View style={{ gap: spacing.sm }}>
-            <ListenButton status={localRecorder.status} onStart={startListening} onStop={() => void localRecorder.stop()} />
+            <ListenButton status={localRecorder.status} onStart={startListening} onStop={() => void localRecorder.stop()} onCancel={() => localRecorder.cancel()} onHoldChange={setHolding} />
             <Text variant="muted" style={{ textAlign: "center", fontSize: 13 }}>Offline: listening on this device{hasAny ? "" : ". Download the words too, so there is something to match."}</Text>
           </View>
         ) : (

@@ -8,7 +8,7 @@ import { useOnboarding } from "@/lib/onboarding";
 import { spacing, useColors } from "@/theme";
 
 const SLIDES = [
-  { eyebrow: "Hear it", title: "Tap once when the singing starts", body: "Hold your phone toward the choir or the pulpit and Scriptune listens for a few seconds. It compares what it heard with every hymn and verse it knows and shows the best matches, with how sure it is.", Illustration: ListenIllustration },
+  { eyebrow: "Hear it", title: "Hold the disc while the singing lasts", body: "Point your phone at the choir or the pulpit and keep your finger on the disc; Scriptune listens for as long as you hold it, up to fifteen seconds. Let go and it compares what it heard with every hymn and verse it knows, then shows the best matches, with how sure it is.", Illustration: ListenIllustration },
   { eyebrow: "Know it", title: "The words, the number, the passage", body: "Open a match to read the whole hymn with its number on the board, or the verse with the chapter around it. Can't record? Type the few words you remember, or search.", Illustration: ReadIllustration },
   { eyebrow: "Keep it", title: "Save it, and take it with you", body: "Save hymns and verses, group them into collections for a service, and write private notes. Download the words to your phone and everything but listening works without a connection. An account is optional.", Illustration: KeepIllustration },
 ] as const;
